@@ -1,0 +1,4 @@
+# Ignore install, build, and log folders inside hawaii_ros_ws
+/hawaii_ros_ws/install/
+/hawaii_ros_ws/build/
+/hawaii_ros_ws/log/
