@@ -1,5 +1,13 @@
 # To launch Rviz simulation:
 
+**On first use:**
+
+`export ROS_DISTRO=humble`
+
+`rosdep install --from-paths ~/software/hawaii_ros_ws/src --ignore-src -r -y`
+
+This will install all package dependencies for you.
+
 **Run in hawaii_ros_ws directory:**
 
 Build packages:
