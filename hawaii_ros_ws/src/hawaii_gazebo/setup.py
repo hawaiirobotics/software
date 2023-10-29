@@ -1,9 +1,8 @@
 import os
 from glob import glob
-from setuptools import setup
-from setuptools import find_packages
+from setuptools import find_packages, setup
 
-package_name = 'hawaii_descriptions'
+package_name = 'hawaii_gazebo'
 
 setup(
     name=package_name,
@@ -14,20 +13,18 @@ setup(
             ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
         (os.path.join('share', package_name, 'launch'), glob(os.path.join('launch', '*launch.[pxy][yma]*'))),
-  	(os.path.join('share', package_name, 'urdf'), glob('urdf/*')),
-  	(os.path.join('share', package_name, 'meshes'), glob('meshes/*')),
-  	(os.path.join('share', package_name, 'rviz'), glob('rviz/*')),
+        (os.path.join('share', package_name, 'worlds'), glob('worlds/*')),
     ],
     install_requires=['setuptools'],
     zip_safe=True,
     maintainer='jramseyer',
     maintainer_email='ramseyer.jessie@gmail.com',
-    description='TODO: Package description',
-    license='Apache-2.0',
+    description='hawaii gazebo simulations',
+    license='Apache License 2.0',
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-        	'hawaii_descriptions = hawaii_descriptions.hawaii_descriptions:main'
+            'hawaii_gazebo = hawaii_gazebo.hawaii_gazebo:main'
         ],
     },
 )
