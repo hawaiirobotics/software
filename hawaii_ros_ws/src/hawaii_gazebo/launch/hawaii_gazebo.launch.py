@@ -90,9 +90,9 @@ def launch_setup(context, *args, **kwargs):
         executable='spawner',
         namespace=robot_name_launch_arg,
         arguments=[
-            '-c',
-            'controller_manager',
             'joint_state_broadcaster',
+            '-c',
+            '/controller_manager',
         ],
         parameters=[{'use_sim_time': use_sim_time,}],
     )
@@ -103,9 +103,9 @@ def launch_setup(context, *args, **kwargs):
         executable='spawner',
         namespace=robot_name_launch_arg,
         arguments=[
-            '-c',
-            'controller_manager',
             'arm_controller',
+            '-c',
+            '/controller_manager',
         ],
         parameters=[{'use_sim_time': use_sim_time, }]
     )
@@ -116,12 +116,30 @@ def launch_setup(context, *args, **kwargs):
         executable='spawner',
         namespace=robot_name_launch_arg,
         arguments=[
-            '-c',
-            'controller_manager',
             'gripper_controller',
+            '-c',
+            '/controller_manager',
         ],
         parameters=[{'use_sim_time': use_sim_time,}]
     )
+
+    # load_joint_state_controller = ExecuteProcess(
+    #     cmd=['ros2', 'control', 'load_controller', '--set-state', 'active',
+    #          'joint_state_broadcaster'],
+    #     output='screen'
+    # )
+
+    # load_arm_controller = ExecuteProcess(
+    #     cmd=['ros2', 'control', 'load_controller', '--set-state', 'active',
+    #          'arm_controller'],
+    #     output='screen'
+    # )
+
+    # load__controller = ExecuteProcess(
+    #     cmd=['ros2', 'control', 'load_controller', '--set-state', 'active',
+    #          'gripper_controller'],
+    #     output='screen'
+    # )
 
     hawaii_descriptions_launch_include = IncludeLaunchDescription(
         PythonLaunchDescriptionSource([
@@ -178,7 +196,6 @@ def generate_launch_description():
     pkg_share = FindPackageShare(package='hawaii_gazebo').find('hawaii_gazebo')
     # Set the path to the RViz configuration settings
     default_rviz_config_path = os.path.join(pkg_share, 'worlds/hawaii_gazebo.world')
-    urdf = os.path.join(get_package_share_directory('hawaii_descriptions'),'hawaii.urdf.xacro')
 
     declared_arguments = []
     declared_arguments.append(DeclareLaunchArgument('use_sim_time', default_value='true', description='Use simulation (Gazebo) clock if true'))
@@ -187,7 +204,6 @@ def generate_launch_description():
     declared_arguments.append(DeclareLaunchArgument('world_filepath', default_value=default_rviz_config_path, description="the file path to the Gazebo 'world' file to load."))
     declared_arguments.append(DeclareLaunchArgument('use_gazebo_gui',default_value='true',choices=('true', 'false')))
     declared_arguments.append(DeclareLaunchArgument('use_rviz', default_value='false'))
-    declared_arguments.append(DeclareLaunchArgument('robot_description', default_value=Command(['xacro ', urdf])))
     declared_arguments.append(DeclareLaunchArgument('hardware_type', default_value='gz_classic'))
     declared_arguments.append(
         DeclareLaunchArgument(

@@ -14,11 +14,11 @@
   <xacro:arg name="show_ar_tag"                     default="false"/>
   <xacro:arg name="show_gripper_bar"                default="true"/>
   <xacro:arg name="show_gripper_fingers"            default="true"/>
-  <xacro:arg name="use_world_frame"                 default="false"/>
+  <xacro:arg name="use_world_frame"                 default="true"/>
   <xacro:arg name="external_urdf_loc"               default=""/>
   <xacro:arg name="hardware_type"                   default="actual"/>
 
-  <xacro:property name="mesh_directory"             value="package://hawaii_descriptions/meshes"/>
+  <xacro:property name="mesh_directory"             value="package://hawaii_descriptions/meshes/${robot_model}_meshes/"/>
   <xacro:property name="urdf_loc"                   value="$(arg external_urdf_loc)"/>
   <xacro:property name="hardware_type"              value="$(arg hardware_type)"/>
   <xacro:property name="pi_offset"                  value="0.00001"/>
