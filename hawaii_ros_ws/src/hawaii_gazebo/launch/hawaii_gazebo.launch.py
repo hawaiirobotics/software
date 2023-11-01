@@ -123,24 +123,6 @@ def launch_setup(context, *args, **kwargs):
         parameters=[{'use_sim_time': use_sim_time,}]
     )
 
-    # load_joint_state_controller = ExecuteProcess(
-    #     cmd=['ros2', 'control', 'load_controller', '--set-state', 'active',
-    #          'joint_state_broadcaster'],
-    #     output='screen'
-    # )
-
-    # load_arm_controller = ExecuteProcess(
-    #     cmd=['ros2', 'control', 'load_controller', '--set-state', 'active',
-    #          'arm_controller'],
-    #     output='screen'
-    # )
-
-    # load__controller = ExecuteProcess(
-    #     cmd=['ros2', 'control', 'load_controller', '--set-state', 'active',
-    #          'gripper_controller'],
-    #     output='screen'
-    # )
-
     hawaii_descriptions_launch_include = IncludeLaunchDescription(
         PythonLaunchDescriptionSource([
             PathJoinSubstitution([

@@ -32,7 +32,7 @@ def generate_launch_description():
         DeclareLaunchArgument('show_gripper_fingers', default_value='true'),
         DeclareLaunchArgument('use_world_frame', default_value='true'),
         DeclareLaunchArgument('external_urdf_loc', default_value=''),
-        DeclareLaunchArgument('hardware_type', default_value='actual', choices= ('actual','fake', 'gz_classic')),
+        DeclareLaunchArgument('hardware_type', default_value='gz_classic', choices= ('actual','fake', 'gz_classic')),
 
         DeclareLaunchArgument('use_rviz', default_value='true'),
         DeclareLaunchArgument('load_gazebo_configs', default_value='false'),
@@ -42,7 +42,7 @@ def generate_launch_description():
         DeclareLaunchArgument('robot_description', default_value=Command(['xacro ', default_urdf_model_path])),
 
         Node(
-            condition=UnlessCondition(LaunchConfiguration('use_joint_pub_gui')),
+            condition=IfCondition(LaunchConfiguration('use_joint_pub')),
             package='joint_state_publisher',
             executable='joint_state_publisher',
             name='joint_state_publisher',
