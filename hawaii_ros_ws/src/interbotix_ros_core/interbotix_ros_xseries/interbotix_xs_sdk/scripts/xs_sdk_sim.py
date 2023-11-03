@@ -427,7 +427,6 @@ class InterbotixRobotXS(Node):
         :details: the command is processed differently based on the operating mode specified for
             the motor
         """
-        LOGGER.info("INSIDE ROBOT_WRITE_JOINT_COMMAND")
         motor = self.motor_map[name]
         mode = motor['mode']
         prof_vel = motor['profile_velocity']
@@ -505,7 +504,6 @@ class InterbotixRobotXS(Node):
         self.robot_write_joint_command(msg.name, msg.cmd)
 
     def robot_sub_command_traj(self, msg: JointTrajectoryCommand) -> None:
-        LOGGER.info("INSIDE ROBOT_SUB_COMMAND_TRAJ")
         """
         Command a joint trajectory from a ROS Subscriber callback.
 
@@ -568,14 +566,12 @@ class InterbotixRobotXS(Node):
                 period = (
                     Duration.from_msg(points[x].time_from_start).nanoseconds
                     - (self.get_clock().now() - time_start).nanoseconds) / S_TO_NS
-                #rate = self.create_rate(1.0 / period)
-                LOGGER.info("SLEEPING")
-                LOGGER.info(str(period))
-                time.sleep(period)
-                #rate.sleep()
-                #rate.destroy()
-                LOGGER.info("DONE SLEEPING")
-            LOGGER.info("RIGHT BEFORE UPDATE_JOINT_STATES_CALL")
+                rate = self.create_rate(1.0 / period)
+                # LOGGER.info(str(period))
+                # time.sleep(period)
+                rate.sleep()
+                rate.destroy()
+                #LOGGER.info("DONE SLEEPING")
             self.robot_update_joint_states()
 
         self.exectue_joint_traj = False
@@ -765,7 +761,6 @@ class InterbotixRobotXS(Node):
         return res
 
     def robot_update_joint_states(self) -> None:
-        LOGGER.warning("INSIDE ROBOT_UPDATE_JOINT_STATES")
         """
         ROS Timer that updates the joint states based on the current 'self.commands'.
 

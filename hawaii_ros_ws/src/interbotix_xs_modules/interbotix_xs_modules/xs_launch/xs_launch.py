@@ -50,7 +50,7 @@ class DeclareInterbotixXSArmRobotDescriptionLaunchArgument(DeclareLaunchArgument
         default_value: Optional[SomeSubstitutionsType] = Command([
             FindExecutable(name='xacro'), ' ',
             PathJoinSubstitution([
-                FindPackageShare('interbotix_xsarm_descriptions'),
+                FindPackageShare('hawaii_descriptions'),
                 'urdf',
                 LaunchConfiguration('robot_model')
             ]), '.urdf.xacro ',

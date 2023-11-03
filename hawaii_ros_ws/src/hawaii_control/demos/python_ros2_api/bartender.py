@@ -49,29 +49,23 @@ Then change to this directory and type:
 
 
 def main():
-    print("cum")
     
     bot = InterbotixManipulatorXS(
         robot_model='hawaii',
         group_name='arm',
         gripper_name='gripper'
     )
-    print("more cum")
 
-    print(bot.arm.group_info.num_joints)
+    bot.arm.group_info.num_joints
     if (bot.arm.group_info.num_joints < 5):
         bot.core.get_logger().fatal('This demo requires the robot to have at least 5 joints!')
         bot.shutdown()
         sys.exit()
 
-    print("starting")
-    print(bot.arm.set_ee_pose_components(x=0.3, z=0.2))
-    print("set ee pose")
+    bot.arm.set_ee_pose_components(x=0.3, z=0.2)
     bot.arm.set_single_joint_position(joint_name='waist', position=np.pi/2.0)
-    print("set waist pose")
     bot.gripper.release()
-    print("release gripper")
-    print(bot.arm.set_ee_cartesian_trajectory(x=0.1, z=-0.16))
+    bot.arm.set_ee_cartesian_trajectory(x=0.1, z=-0.16)
     bot.gripper.grasp()
     bot.arm.set_ee_cartesian_trajectory(x=-0.1, z=0.16)
     bot.arm.set_single_joint_position(joint_name='waist', position=-np.pi/2.0)

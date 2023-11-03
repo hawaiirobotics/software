@@ -126,7 +126,7 @@ class InterbotixManipulatorXS:
             node_name=node_name,
             args=args
         )
-        print("even more cum")
+
         self.arm = InterbotixArmXSInterface(
             core=self.core,
             robot_model=robot_model,
@@ -134,7 +134,7 @@ class InterbotixManipulatorXS:
             moving_time=moving_time,
             accel_time=accel_time,
         )
-        print("even more cum")
+
         if gripper_name is not None:
             self.gripper = InterbotixGripperXSInterface(
                 core=self.core,
@@ -144,7 +144,7 @@ class InterbotixManipulatorXS:
                 gripper_pressure_upper_limit=gripper_pressure_upper_limit,
             )
             
-        print("even more cum")
+
         if start_on_init:
             self.start()
 
