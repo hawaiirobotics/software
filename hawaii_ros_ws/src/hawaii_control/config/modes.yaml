@@ -6,7 +6,7 @@ groups:
     profile_acceleration: 300
     torque_enable: true
 
-singles:
-  gripper:
-    operating_mode: pwm
-    torque_enable: true
+#singles:
+#  gripper:
+#    operating_mode: pwm
+#    torque_enable: true

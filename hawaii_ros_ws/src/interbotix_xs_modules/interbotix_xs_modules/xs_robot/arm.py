@@ -136,6 +136,7 @@ class InterbotixManipulatorXS:
         )
 
         if gripper_name is not None:
+            print("GRIPPER")
             self.gripper = InterbotixGripperXSInterface(
                 core=self.core,
                 gripper_name=gripper_name,

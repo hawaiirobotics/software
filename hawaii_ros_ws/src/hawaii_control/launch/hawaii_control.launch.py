@@ -155,12 +155,17 @@ def generate_launch_description():
     declared_arguments.append(
         DeclareLaunchArgument(
             'motor_configs',
-            default_value=[PathJoinSubstitution([
+            default_value=PathJoinSubstitution([
                 FindPackageShare('hawaii_control'),
                 'config',
-                LaunchConfiguration('robot_model')]),
-                '.yaml'
-            ],
+                'single_dynmxl.yaml',
+            ]),
+            # default_value=[PathJoinSubstitution([
+            #     #FindPackageShare('hawaii_control'),
+            #     #'config',
+            #     #LaunchConfiguration('robot_model')]),
+            #     '.yaml'
+            # ],
             description="the file path to the 'motor config' YAML file.",
         )
     )
