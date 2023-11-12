@@ -168,7 +168,7 @@ def generate_launch_description():
     declared_arguments.append(
         DeclareLaunchArgument(
             'use_sim_time',
-            default_value='true',
+            default_value='false',
             choices=('true', 'false'),
             description=(
                 'tells ROS nodes asking for time to get the Gazebo-published simulation time, '

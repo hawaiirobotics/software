@@ -239,7 +239,7 @@ bool InterbotixRobotXS::robot_srv_reboot_motors(
   const std::shared_ptr<rmw_request_id_t> request_header,
   const std::shared_ptr<Reboot::Request> req,
   const std::shared_ptr<Reboot::Response> res)
-{
+{  
   (void)request_header;
   if (!robot_srv_validate(req->cmd_type, req->name)) {
     return false;
@@ -326,7 +326,7 @@ bool InterbotixRobotXS::robot_srv_set_operating_modes(
   const std::shared_ptr<rmw_request_id_t> request_header,
   const std::shared_ptr<OperatingModes::Request> req,
   const std::shared_ptr<OperatingModes::Response> res)
-{
+{ 
   (void)request_header;
   if (!robot_srv_validate(req->cmd_type, req->name)) {
     return false;

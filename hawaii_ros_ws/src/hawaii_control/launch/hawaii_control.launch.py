@@ -199,7 +199,7 @@ def generate_launch_description():
     declared_arguments.append(
         DeclareLaunchArgument(
             'xs_driver_logging_level',
-            default_value='INFO',
+            default_value='DEBUG',
             choices=('DEBUG', 'INFO', 'WARN', 'ERROR', 'FATAL'),
             description='set the logging level of the X-Series Driver.'
         )
@@ -207,7 +207,7 @@ def generate_launch_description():
     declared_arguments.append(
         DeclareLaunchArgument(
             'use_sim',
-            default_value='true',
+            default_value='false',
             choices=('true', 'false'),
             description=(
                 'if `true`, the DYNAMIXEL simulator node is run; use RViz to visualize the'

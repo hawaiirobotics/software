@@ -136,7 +136,6 @@ class InterbotixManipulatorXS:
         )
 
         if gripper_name is not None:
-            print("GRIPPER")
             self.gripper = InterbotixGripperXSInterface(
                 core=self.core,
                 gripper_name=gripper_name,
@@ -145,7 +144,6 @@ class InterbotixManipulatorXS:
                 gripper_pressure_upper_limit=gripper_pressure_upper_limit,
             )
             
-
         if start_on_init:
             self.start()
 
@@ -205,7 +203,6 @@ class InterbotixArmXSInterface:
         while rclpy.ok() and not self.future_group_info.done():
             rclpy.spin_until_future_complete(self.core, self.future_group_info)
             rclpy.spin_once(self.core)
-
         self.group_info: RobotInfo.Response = self.future_group_info.result()
         if self.group_info.profile_type != 'time':
             self.core.get_logger().error(

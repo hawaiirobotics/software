@@ -1,10 +1,10 @@
-port: /dev/ttyDXL
+port: /dev/ttyUSB0
 
 joint_order: [waist]
 sleep_positions: [0]
 
 joint_state_publisher:
-  update_rate: 100
+  update_rate: 30
   publish_states: true
   topic_name: joint_states
 
