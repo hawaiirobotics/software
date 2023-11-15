@@ -4,7 +4,7 @@
 Encoder CUI1(4, 5);
 Encoder CUI2(6, 7);
 
-int M1, M2, M1_P, M2_P;
+int M1, M2, M1_P, M2_P, C1, C2;
 
 void setup() {
   // put your setup code here, to run once:
@@ -71,6 +71,7 @@ void loop() {
   //   Serial.println(buffer);
   // }
 
+/*
   // MAG 1
   Wire.beginTransmission(0x36);
   Wire.write(0x0C);
@@ -104,10 +105,20 @@ void loop() {
   // M1 153
   // M2 1982
   // FSR 2048
+  int C1_raw, C2_raw;
 
-  sprintf(buffer, "0 2048 %d %d", M1, M2);
-  sprintf(buffer, "%d %d", M1, M2);
+  C1_raw = CUI1.read();
+  C2_raw = CUI2.read();
+
+  C1 = -C1_raw;
+  C2 = C2_raw;
+
+
+  // sprintf(buffer, "0 2048 %d %d %d %d", M1, M2, C1, C2);
+  sprintf(buffer, "%d %d %d %d", M1, M2, C1, C2);
+  // sprintf(buffer, "%d %d", M1, M2);
   // sprintf(buffer, "%d", (M1 - M2) + 63);
   Serial.println(buffer);
-  delay(10);
+  delay(5);
+*/
 }
