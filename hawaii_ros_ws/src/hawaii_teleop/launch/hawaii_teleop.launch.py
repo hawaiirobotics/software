@@ -35,15 +35,17 @@ def generate_launch_description():
 
         IncludeLaunchDescription(
             PythonLaunchDescriptionSource([
-                FindPackageShare('hawaii_control'),
-                '/launch/hawaii_control.launch.py'
-            ]),
+                PathJoinSubstitution([
+                    FindPackageShare('hawaii_control'),
+                    'launch',
+                    'hawaii_control.launch.py'])
+                ]),
             launch_arguments={
-                'robot_model': robot_model,
+                'robot_model': 'hawaii_left',
                 'robot_name': student_left_name,
                 'base_link_frame': "base_link",
-                'use_world_frame': 'false',
-                'use_rviz': 'false',
+                'use_world_frame': 'true',
+                'use_rviz': 'true',
                 'mode_configs': student_left_mode,
                 'use_sim': use_sim
             }.items()
@@ -54,11 +56,11 @@ def generate_launch_description():
                 '/launch/hawaii_control.launch.py'
             ]),
             launch_arguments={
-                'robot_model': robot_model,
+                'robot_model': 'hawaii_right',
                 'robot_name': student_right_name,
                 'base_link_frame': "base_link",
-                'use_world_frame': 'false',
-                'use_rviz': 'false',
+                'use_world_frame': 'true',
+                'use_rviz': 'true',
                 'mode_configs': student_right_mode,
                 'use_sim': use_sim
             }.items()
@@ -76,7 +78,7 @@ def generate_launch_description():
             executable='static_transform_publisher',
             name='student_right_transform_broadcaster',
             output='screen',
-            arguments=['0', '0', '0', '0', '0', '0', '/world', f"/$(arg student_right_name)/base_link"] #update x,y,z,and quats
+            arguments=['0', '2', '0', '0', '0', '0', '/world', f"/$(arg student_right_name)/base_link"] #update x,y,z,and quats
         ),
         Node(
             package='usb_cam',
