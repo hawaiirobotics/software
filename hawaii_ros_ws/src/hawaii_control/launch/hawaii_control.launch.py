@@ -131,7 +131,6 @@ def generate_launch_description():
     declared_arguments.append(
         DeclareLaunchArgument(
             'robot_model',
-            choices=('hawaii','vx300'),
             default_value='hawaii'
         )
     )
