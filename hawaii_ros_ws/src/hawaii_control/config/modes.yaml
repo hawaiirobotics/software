@@ -7,6 +7,6 @@ groups:
     torque_enable: true
 
 singles:
-  gripper:
+  GL:
     operating_mode: pwm
     torque_enable: true

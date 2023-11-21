@@ -1,38 +1,6 @@
 <?xml version="1.0"?>
-<robot name="hawaii" xmlns:xacro="http://ros.org/wiki/xacro">
+<robot name="Student_Arm">
   
-  <xacro:property name="pi_offset"                  value="0.00001"/>  
-  
-  <xacro:property name="J1_limit_effort"            value="0"/>
-  <xacro:property name="J1_limit_lower"             value="0"/>
-  <xacro:property name="J1_limit_upper"             value="0"/>
-  <xacro:property name="J1_limit_vel"               value="0"/>
-
-  <xacro:property name="J2_limit_effort"            value="0"/>
-  <xacro:property name="J2_limit_lower"             value="${radians(-80)}"/>
-  <xacro:property name="J2_limit_upper"             value="${radians(143)}"/>
-  <xacro:property name="J2_limit_vel"               value="0"/>
-
-  <xacro:property name="J3_limit_effort"            value="0"/>
-  <xacro:property name="J3_limit_lower"             value="-1.4"/>
-  <xacro:property name="J3_limit_upper"             value="1.8"/>
-  <xacro:property name="J3_limit_vel"               value="0"/>
-
-  <xacro:property name="J5_limit_effort"            value="0"/>
-  <xacro:property name="J5_limit_lower"             value="-0.75"/>
-  <xacro:property name="J5_limit_upper"             value="2.9"/>
-  <xacro:property name="J5_limit_vel"               value="0"/>
-
-  <xacro:property name="GR_limit_effort"            value="0"/>
-  <xacro:property name="GR_limit_lower"             value="0"/>
-  <xacro:property name="GR_limit_upper"             value="0.057"/>
-  <xacro:property name="GR_limit_vel"               value="0"/>
-
-  <xacro:property name="GL_limit_effort"            value="0"/>
-  <xacro:property name="GR_limit_lower"             value="0"/>
-  <xacro:property name="GR_limit_upper"             value="0.057"/>
-  <xacro:property name="GR_limit_vel"               value="0"/>
-
   <link name="world"/>
   <joint name="fixed" type="fixed">
     <parent link="world"/>
@@ -59,7 +27,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://hawaii_descriptions/meshes/hawaii_meshes/base_link.STL" />
+          filename="../meshes/hawaii_meshes/base_link.STL" />
       </geometry>
       <material
         name="">
@@ -73,7 +41,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://hawaii_descriptions/meshes/hawaii_meshes/base_link.STL" />
+          filename="../meshes/hawaii_meshes/base_link.STL" />
       </geometry>
     </collision>
   </link>
@@ -98,7 +66,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://hawaii_descriptions/meshes/hawaii_meshes/J1.STL" />
+          filename="../meshes/hawaii_meshes/J1.STL" />
       </geometry>
       <material
         name="">
@@ -112,7 +80,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://hawaii_descriptions/meshes/hawaii_meshes/J1.STL" />
+          filename="../meshes/hawaii_meshes/J1.STL" />
       </geometry>
     </collision>
   </link>
@@ -128,10 +96,10 @@
     <axis
       xyz="0 1 0" />
     <limit
-      effort="${J1_limit_effort}"
-      lower="${J1_limit_lower}"
-      upper="${J1_limit_upper}"
-      velocity="${J1_limit_vel}"/>
+      effort="0"
+      lower="0"
+      upper="0"
+      velocity="0"/>
   </joint>
   <link name="J2">
     <inertial>
@@ -154,7 +122,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://hawaii_descriptions/meshes/hawaii_meshes/J2.STL" />
+          filename="../meshes/hawaii_meshes/J2.STL" />
       </geometry>
       <material
         name="">
@@ -168,7 +136,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://hawaii_descriptions/meshes/hawaii_meshes/J2.STL" />
+          filename="../meshes/hawaii_meshes/J2.STL" />
       </geometry>
     </collision>
   </link>
@@ -185,10 +153,10 @@
     <axis
       xyz="0 0 -1" />
     <limit
-      effort="${J2_limit_effort}"
-      lower="${J2_limit_lower}"
-      upper="${J2_limit_upper}"
-      velocity="${J2_limit_vel}"/>
+      effort="0"
+      lower="-1.4"
+      upper="2.5"
+      velocity="0"/>
   </joint>
   <link
     name="J3">
@@ -212,7 +180,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://hawaii_descriptions/meshes/hawaii_meshes/J3.STL" />
+          filename="../meshes/hawaii_meshes/J3.STL" />
       </geometry>
       <material
         name="">
@@ -226,7 +194,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://hawaii_descriptions/meshes/hawaii_meshes/J3.STL" />
+          filename="../meshes/hawaii_meshes/J3.STL" />
       </geometry>
     </collision>
   </link>
@@ -243,10 +211,10 @@
     <axis
       xyz="0 0 1" />
     <limit
-      effort="${J3_limit_effort}"
-      lower="${J3_limit_lower}"
-      upper="${J3_limit_upper}"
-      velocity="${J3_limit_vel}"/>
+      lower="-1.4"
+      upper="1.8"
+      effort="0"
+      velocity="0" />
   </joint>
   <link
     name="J4">
@@ -270,7 +238,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://hawaii_descriptions/meshes/hawaii_meshes/J4.STL" />
+          filename="../meshes/hawaii_meshes/J4.STL" />
       </geometry>
       <material
         name="">
@@ -284,7 +252,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://hawaii_descriptions/meshes/hawaii_meshes/J4.STL" />
+          filename="../meshes/hawaii_meshes/J4.STL" />
       </geometry>
     </collision>
   </link>
@@ -323,7 +291,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://hawaii_descriptions/meshes/hawaii_meshes/J5.STL" />
+          filename="../meshes/hawaii_meshes/J5.STL" />
       </geometry>
       <material
         name="">
@@ -337,7 +305,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://hawaii_descriptions/meshes/hawaii_meshes/J5.STL" />
+          filename="../meshes/hawaii_meshes/J5.STL" />
       </geometry>
     </collision>
   </link>
@@ -354,10 +322,10 @@
     <axis
       xyz="0 0 1" />
     <limit
-      effort="${J5_limit_effort}"
-      lower="${J5_limit_lower}"
-      upper="${J5_limit_upper}"
-      velocity="${J5_limit_vel}"/>
+      lower="-0.75"
+      upper="2.9"
+      effort="0"
+      velocity="0" />
   </joint>
   <link
     name="J6">
@@ -381,7 +349,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://hawaii_descriptions/meshes/hawaii_meshes/J6.STL" />
+          filename="../meshes/hawaii_meshes/J6.STL" />
       </geometry>
       <material
         name="">
@@ -395,7 +363,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://hawaii_descriptions/meshes/hawaii_meshes/J6.STL" />
+          filename="../meshes/hawaii_meshes/J6.STL" />
       </geometry>
     </collision>
   </link>
@@ -434,7 +402,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://hawaii_descriptions/meshes/hawaii_meshes/Gripper_Left.STL" />
+          filename="../meshes/hawaii_meshes/Gripper_Left.STL" />
       </geometry>
       <material
         name="">
@@ -448,7 +416,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://hawaii_descriptions/meshes/hawaii_meshes/Gripper_Left.STL" />
+          filename="../meshes/hawaii_meshes/Gripper_Left.STL" />
       </geometry>
     </collision>
   </link>
@@ -465,10 +433,10 @@
     <axis
       xyz="1 0 0" />
     <limit
-      effort="${GL_limit_effort}"
-      lower="${GL_limit_lower}"
-      upper="${GL_limit_upper}"
-      velocity="${GL_limit_vel}"/>
+      lower="0"
+      upper="0.057"
+      effort="0"
+      velocity="0" />
   </joint>
   <link
     name="Gripper_Right">
@@ -492,7 +460,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://hawaii_descriptions/meshes/hawaii_meshes/Gripper_Right.STL" />
+          filename="../meshes/hawaii_meshes/Gripper_Right.STL" />
       </geometry>
       <material
         name="">
@@ -506,7 +474,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://hawaii_descriptions/meshes/hawaii_meshes/Gripper_Right.STL" />
+          filename="../meshes/hawaii_meshes/Gripper_Right.STL" />
       </geometry>
     </collision>
   </link>
@@ -523,10 +491,10 @@
     <axis
       xyz="0 0 1" />
     <limit
-      effort="${GR_limit_effort}"
-      lower="${GR_limit_lower}"
-      upper="${GR_limit_upper}"
-      velocity="${GR_limit_vel}"/>
+      lower="0"
+      upper="0.057"
+      effort="0"
+      velocity="0" />
     <mimic
       joint="GL"
       multiplier="1"
