@@ -72,8 +72,8 @@
   <link name="$(arg robot_name)/$(arg base_link_frame)">
     <visual>
       <origin
-        rpy="0 0 ${3*pi/2}"
-        xyz="0 3 0"/>
+        rpy="0 0 ${pi/2}"
+        xyz="0 0 0"/>
       <geometry>
         <mesh
           filename="${mesh_directory}/base.stl"

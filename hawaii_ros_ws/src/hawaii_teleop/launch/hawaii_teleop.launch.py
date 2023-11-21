@@ -10,7 +10,7 @@ from launch.launch_description_sources import PythonLaunchDescriptionSource
 
 def generate_launch_description():
 
-    robot_model = LaunchConfiguration('robot_model', default='hawaii')
+    # robot_model = LaunchConfiguration('robot_model', default='hawaii')
     student_left_name = LaunchConfiguration('student_left_name')
     student_right_name = LaunchConfiguration('student_right_name')
     student_left_mode = LaunchConfiguration('student_modes_left')
@@ -18,7 +18,7 @@ def generate_launch_description():
     use_sim = LaunchConfiguration('use_sim', default=False)
 
     return LaunchDescription([
-        DeclareLaunchArgument('robot_model', default_value='hawaii'),
+        # DeclareLaunchArgument('robot_model', default_value='hawaii'),
         DeclareLaunchArgument('student_left_name', default_value='student_left'),
         DeclareLaunchArgument('student_right_name', default_value='student_right'),
         DeclareLaunchArgument('student_modes_left', default_value=PathJoinSubstitution([
@@ -31,8 +31,23 @@ def generate_launch_description():
                                                     'config',
                                                     'student_modes_right.yaml',
                                                 ])),
-        DeclareLaunchArgument('use_sim', default_value='false'),
+        DeclareLaunchArgument('use_sim', default_value='true'),
 
+        IncludeLaunchDescription(
+            PythonLaunchDescriptionSource([
+                FindPackageShare("hawaii_control"),
+                '/launch/hawaii_control.launch.py'
+            ]),
+            launch_arguments={
+                'robot_model': 'hawaii_right',
+                'robot_name': student_right_name,
+                'base_link_frame': "base_link",
+                'use_world_frame': 'true',
+                'use_rviz': 'true',
+                'mode_configs': student_right_mode,
+                'use_sim': use_sim
+            }.items()
+        ),
         IncludeLaunchDescription(
             PythonLaunchDescriptionSource([
                 PathJoinSubstitution([
@@ -50,35 +65,20 @@ def generate_launch_description():
                 'use_sim': use_sim
             }.items()
         ),
-        IncludeLaunchDescription(
-            PythonLaunchDescriptionSource([
-                FindPackageShare("hawaii_control"),
-                '/launch/hawaii_control.launch.py'
-            ]),
-            launch_arguments={
-                'robot_model': 'hawaii_right',
-                'robot_name': student_right_name,
-                'base_link_frame': "base_link",
-                'use_world_frame': 'true',
-                'use_rviz': 'true',
-                'mode_configs': student_right_mode,
-                'use_sim': use_sim
-            }.items()
-        ),
 
         Node(
             package='tf2_ros',
             executable='static_transform_publisher',
             name='student_left_transform_broadcaster',
             output='screen',
-            arguments=['0', '0', '0', '0', '0', '0', '/world', f"/$(arg student_left_name)/base_link"] #update x,y,z,and quats
+            arguments=['0', '0.25', '0', '0', '0', '0', '/world', f"/student_left/base_link"] #update x,y,z,and quats
         ),
         Node(
             package='tf2_ros',
             executable='static_transform_publisher',
             name='student_right_transform_broadcaster',
             output='screen',
-            arguments=['0', '2', '0', '0', '0', '0', '/world', f"/$(arg student_right_name)/base_link"] #update x,y,z,and quats
+            arguments=['0', '0.25', '0', '0', '0', '0', '/world', f"/student_right/base_link"] #update x,y,z,and quats
         ),
         Node(
             package='usb_cam',
