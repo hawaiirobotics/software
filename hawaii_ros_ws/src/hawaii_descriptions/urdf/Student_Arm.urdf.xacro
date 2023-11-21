@@ -29,9 +29,9 @@
   <xacro:property name="GR_limit_vel"               value="0"/>
 
   <xacro:property name="GL_limit_effort"            value="0"/>
-  <xacro:property name="GR_limit_lower"             value="0"/>
-  <xacro:property name="GR_limit_upper"             value="0.057"/>
-  <xacro:property name="GR_limit_vel"               value="0"/>
+  <xacro:property name="GL_limit_lower"             value="0"/>
+  <xacro:property name="GL_limit_upper"             value="0.057"/>
+  <xacro:property name="GL_limit_vel"               value="0"/>
 
   <link name="world"/>
   <joint name="fixed" type="fixed">
