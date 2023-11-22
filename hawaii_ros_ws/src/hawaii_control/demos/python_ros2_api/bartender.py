@@ -56,7 +56,6 @@ def main():
         gripper_name='gripper'
     )
 
-    bot.arm.group_info.num_joints
     if (bot.arm.group_info.num_joints < 5):
         bot.core.get_logger().fatal('This demo requires the robot to have at least 5 joints!')
         bot.shutdown()

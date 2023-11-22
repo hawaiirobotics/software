@@ -199,7 +199,7 @@ if __name__ == "__main__":
 
     # Instantiate the tool and perform operations
     kinematics_tool = KinematicsFromDescriptionTool(configs)
-    urdf_file = "/home/hawaii/software/hawaii_ros_ws/src/hawaii_descriptions/urdf/Student_Arm.urdf"
+    urdf_file = "../urdf/Student_Arm.urdf"
     kinematics_tool.load_desc_from_file(urdf_file)
     kinematics_tool.run()
 
@@ -208,5 +208,9 @@ if __name__ == "__main__":
     Slist = kinematics_tool.get_Slist()
 
     # Print or use the matrices as required
-    print("Homogeneous Transform Matrix (M):\n", M)
-    print("Screw Axes List (Slist):\n", Slist)
+    # Print or use the matrices as required with commas between elements
+    print("Homogeneous Transform Matrix (M):\n", '\n'.join(['[' + ', '.join(map(str, row)) + ']' for row in M]))
+    print("Screw Axes List (Slist):\n", '\n'.join(['[' + ', '.join(map(str, row)) + ']' for row in Slist]))
+
+
+

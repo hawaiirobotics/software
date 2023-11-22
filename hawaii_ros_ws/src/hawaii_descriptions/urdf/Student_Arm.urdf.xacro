@@ -1,27 +1,27 @@
 <?xml version="1.0"?>
-<robot name="hawaii" xmlns:xacro="http://ros.org/wiki/xacro">
+<robot name="Student_Arm" xmlns:xacro="http://ros.org/wiki/xacro">
   
   <xacro:property name="pi_offset"                  value="0.00001"/>  
   
   <xacro:property name="J1_limit_effort"            value="0"/>
-  <xacro:property name="J1_limit_lower"             value="0"/>
-  <xacro:property name="J1_limit_upper"             value="0"/>
-  <xacro:property name="J1_limit_vel"               value="0"/>
+  <xacro:property name="J1_limit_lower"             value="-3.141592653589793"/>
+  <xacro:property name="J1_limit_upper"             value="3.141592653589793"/>
+  <xacro:property name="J1_limit_vel"               value="3.141592653589793"/>
 
   <xacro:property name="J2_limit_effort"            value="0"/>
   <xacro:property name="J2_limit_lower"             value="${radians(-80)}"/>
   <xacro:property name="J2_limit_upper"             value="${radians(143)}"/>
-  <xacro:property name="J2_limit_vel"               value="0"/>
+  <xacro:property name="J2_limit_vel"               value="3.141592653589793"/>
 
   <xacro:property name="J3_limit_effort"            value="0"/>
   <xacro:property name="J3_limit_lower"             value="-1.4"/>
   <xacro:property name="J3_limit_upper"             value="1.8"/>
-  <xacro:property name="J3_limit_vel"               value="0"/>
+  <xacro:property name="J3_limit_vel"               value="3.141592653589793"/>
 
   <xacro:property name="J5_limit_effort"            value="0"/>
   <xacro:property name="J5_limit_lower"             value="-0.75"/>
   <xacro:property name="J5_limit_upper"             value="2.9"/>
-  <xacro:property name="J5_limit_vel"               value="0"/>
+  <xacro:property name="J5_limit_vel"               value="3.141592653589793"/>
 
   <xacro:property name="GR_limit_effort"            value="0"/>
   <xacro:property name="GR_limit_lower"             value="0"/>
@@ -117,7 +117,7 @@
     </collision>
   </link>
   <joint name="J1"
-    type="continuous">
+    type="revolute">
     <origin
       xyz="0 0 0"
       rpy="1.5708 0 0" />
@@ -290,7 +290,7 @@
   </link>
   <joint
     name="J4"
-    type="continuous">
+    type="revolute">
     <origin
       xyz="0 -0.232125103077643 0.0220999999999999"
       rpy="0.785398163397452 1.5707963267949 0" />
@@ -300,6 +300,11 @@
       link="J4" />
     <axis
       xyz="0 0.707106781186543 -0.707106781186552" />
+    <limit
+      effort="0"
+      lower="-3.141592653589793"
+      upper="3.141592653589793"
+      velocity="3.141592653589793"/>
   </joint>
   <link
     name="J5">
@@ -401,7 +406,7 @@
   </link>
   <joint
     name="J6"
-    type="continuous">
+    type="revolute">
     <origin
       xyz="-0.0410888768161758 0.0397298912546164 0"
       rpy="1.5707963267949 0.409116990824611 -2.33938085233866" />
@@ -411,6 +416,11 @@
       link="J6" />
     <axis
       xyz="0 0 1" />
+    <limit
+      effort="0"
+      lower="-3.141592653589793"
+      upper="3.141592653589793"
+      velocity="3.141592653589793"/>
   </joint>
   <link
     name="Gripper_Left">

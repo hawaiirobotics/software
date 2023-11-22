@@ -85,7 +85,7 @@
     </collision>
   </link>
   <joint name="J1"
-    type="continuous">
+    type="revolute">
     <origin
       xyz="0 0 0"
       rpy="1.5708 0 0" />
@@ -97,8 +97,8 @@
       xyz="0 1 0" />
     <limit
       effort="0"
-      lower="0"
-      upper="0"
+      lower="-3.141592653589793"
+      upper="3.141592653589793"
       velocity="0"/>
   </joint>
   <link name="J2">
@@ -258,7 +258,7 @@
   </link>
   <joint
     name="J4"
-    type="continuous">
+    type="revolute">
     <origin
       xyz="0 -0.232125103077643 0.0220999999999999"
       rpy="0.785398163397452 1.5707963267949 0" />
@@ -268,6 +268,11 @@
       link="J4" />
     <axis
       xyz="0 0.707106781186543 -0.707106781186552" />
+    <limit
+      effort="0"
+      lower="-3.141592653589793"
+      upper="3.141592653589793"
+      velocity="0"/>  
   </joint>
   <link
     name="J5">
@@ -369,7 +374,7 @@
   </link>
   <joint
     name="J6"
-    type="continuous">
+    type="revolute">
     <origin
       xyz="-0.0410888768161758 0.0397298912546164 0"
       rpy="1.5707963267949 0.409116990824611 -2.33938085233866" />
@@ -379,6 +384,11 @@
       link="J6" />
     <axis
       xyz="0 0 1" />
+    <limit
+      effort="0"
+      lower="-3.141592653589793"
+      upper="3.141592653589793"
+      velocity="0"/>  
   </joint>
   <link
     name="Gripper_Left">
