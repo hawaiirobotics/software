@@ -24,8 +24,8 @@
   <xacro:property name="J5_limit_vel"               value="3.141592653589793"/>
 
   <xacro:property name="GR_limit_effort"            value="5"/>
-  <xacro:property name="GR_limit_lower"             value="-0.057"/>
-  <xacro:property name="GR_limit_upper"             value="0"/>
+  <xacro:property name="GR_limit_lower"             value="0"/>
+  <xacro:property name="GR_limit_upper"             value="0.057"/>
   <xacro:property name="GR_limit_vel"               value="1"/>
 
   <xacro:property name="GL_limit_effort"            value="5"/>
