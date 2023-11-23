@@ -1,27 +1,35 @@
 <?xml version="1.0"?>
-<robot name="Student_Arm" xmlns:xacro="http://ros.org/wiki/xacro">
-  
-  <xacro:property name="pi_offset"                  value="0.00001"/>  
+<robot name="Student_Arm" xmlns:xacro="http://ros.org/wiki/xacro"> 
   
   <xacro:property name="J1_limit_effort"            value="0"/>
-  <xacro:property name="J1_limit_lower"             value="-3.141592653589793"/>
-  <xacro:property name="J1_limit_upper"             value="3.141592653589793"/>
-  <xacro:property name="J1_limit_vel"               value="3.141592653589793"/>
+  <xacro:property name="J1_limit_lower"             value="${-pi}"/>
+  <xacro:property name="J1_limit_upper"             value="${pi}"/>
+  <xacro:property name="J1_limit_vel"               value="${pi}"/>
 
   <xacro:property name="J2_limit_effort"            value="0"/>
   <xacro:property name="J2_limit_lower"             value="${radians(-80)}"/>
   <xacro:property name="J2_limit_upper"             value="${radians(143)}"/>
-  <xacro:property name="J2_limit_vel"               value="3.141592653589793"/>
+  <xacro:property name="J2_limit_vel"               value="${pi}"/>
 
   <xacro:property name="J3_limit_effort"            value="0"/>
   <xacro:property name="J3_limit_lower"             value="-1.4"/>
   <xacro:property name="J3_limit_upper"             value="1.8"/>
-  <xacro:property name="J3_limit_vel"               value="3.141592653589793"/>
+  <xacro:property name="J3_limit_vel"               value="${pi}"/>
+
+  <xacro:property name="J4_limit_effort"            value="0"/>
+  <xacro:property name="J4_limit_lower"             value="${-pi}"/>
+  <xacro:property name="J4_limit_upper"             value="${pi}"/>
+  <xacro:property name="J4_limit_vel"               value="${pi}"/>
 
   <xacro:property name="J5_limit_effort"            value="0"/>
   <xacro:property name="J5_limit_lower"             value="-0.75"/>
   <xacro:property name="J5_limit_upper"             value="2.9"/>
-  <xacro:property name="J5_limit_vel"               value="3.141592653589793"/>
+  <xacro:property name="J5_limit_vel"               value="${pi}"/>
+
+  <xacro:property name="J6_limit_effort"            value="0"/>
+  <xacro:property name="J6_limit_lower"             value="${-pi}"/>
+  <xacro:property name="J6_limit_upper"             value="${pi}"/>
+  <xacro:property name="J6_limit_vel"               value="${pi}"/>
 
   <xacro:property name="GR_limit_effort"            value="5"/>
   <xacro:property name="GR_limit_lower"             value="0"/>
@@ -301,10 +309,10 @@
     <axis
       xyz="0 0.707106781186543 -0.707106781186552" />
     <limit
-      effort="0"
-      lower="-3.141592653589793"
-      upper="3.141592653589793"
-      velocity="3.141592653589793"/>
+      effort="${J4_limit_effort}"
+      lower="${J4_limit_lower}"
+      upper="${J4_limit_upper}"
+      velocity="${J4_limit_vel}"/>
   </joint>
   <link
     name="J5">
@@ -417,10 +425,10 @@
     <axis
       xyz="0 0 1" />
     <limit
-      effort="0"
-      lower="-3.141592653589793"
-      upper="3.141592653589793"
-      velocity="3.141592653589793"/>
+      effort="${J6_limit_effort}"
+      lower="${J6_limit_lower}"
+      upper="${J6_limit_upper}"
+      velocity="${J6_limit_vel}"/>
   </joint>
   <link
     name="Gripper_Left">
