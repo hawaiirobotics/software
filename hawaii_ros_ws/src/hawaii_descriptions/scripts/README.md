@@ -1,20 +1,26 @@
-The kinematics_from_description.py script calculates the properties required to run parts of the Modern Robotics Library from a robot's URDF. Specifically, this program calculates the M and Slist parameters required by MR kinematics functions:
+# Kinematics_from_description.py
 
-    The M matrix is the end effector configuration in SE(3) when the robot is in its home position (i.e. all joints are at position 0).
-    The Slist matrix is the joint screw axes expressed in the space frame when the robot is in its home position. This matrix is formatted to have each axis as a column
-    
-    This script uses the urdfpy python package which requires that the links in the urdf are relative or absolute links rather than ROS resource URLs.
-    
-    To run the script:
-    
-    run python3 -m pip3 install -r requirements.txt
-    
-    open kinematics_from_description.py and change the body_frame and space_frame configs to what you need them to be.
-    
-space_frame - The name given to the link that will serve as the location of the robot's base, or {0} link.
-body_frame - The name given to the link that will serve as the location of the end effector.
+The `kinematics_from_description.py` script computes necessary properties for running portions of the Modern Robotics Library using a robot's URDF. Specifically, this program calculates the `M` and `Slist` parameters required by MR kinematics functions:
 
-also change the file path to the path to your urdf file
+- The `M` matrix represents the end effector configuration in SE(3) when the robot is at its home position (i.e., all joints are at position 0).
+- The `Slist` matrix denotes the joint screw axes expressed in the space frame when the robot is at its home position. Each axis is formatted as a column within this matrix.
 
-Copy the output M and Slist Matrices to the interbotix_xs_modules/xs_robot/mr_descriptions.py script for your robot.
+This script utilizes the `urdfpy` Python package, which mandates that <ins>**the links in the URDF are relative or absolute links, rather than ROS resource URLs**</ins>.
 
+## Usage
+
+1. Install the necessary requirements:
+   
+   ```bash
+   python3 -m pip3 install -r requirements.txt
+
+2. Open kinematics_from_description.py and modify the configurations for:
+
+    `space_frame`: The name assigned to the link representing the location of the robot's base or {0} link.
+    
+    `body_frame`: The name assigned to the link indicating the location of the end effector.
+3. Update the file path to point to your URDF file.
+
+4. Copy the output `M` and `Slist` Matrices to the `interbotix_xs_modules/xs_robot/mr_descriptions.py` script for your robot.
+
+    This script facilitates the extraction of essential kinematic parameters from your robot's URDF, preparing them for use within the Modern Robotics Library functions.
