@@ -256,7 +256,7 @@ class InterbotixRobotXS(Node):
         # continue to populate self.joint_states with gripper finger info
         for gpr in self.gripper_order:
             fingers = ['left_finger', 'right_finger']
-            lin_dist = self.robot_convert_angular_position_to_linear(gpr, self.sleep_map[gpr])
+            lin_dist = self.sleep_map[gpr]
             for finger in fingers:
                 fngr = self.gripper_map[gpr][finger]
                 self.js_index_map[fngr] = len(self.js_index_map)
@@ -648,9 +648,7 @@ class InterbotixRobotXS(Node):
         for name in joint_names:
             res.joint_ids.append(self.motor_map[name]['motor_id'])
             if name in self.gripper_map:
-                res.joint_sleep_positions.append(
-                    self.robot_convert_angular_position_to_linear(name, 0)
-                )
+                res.joint_sleep_positions.append(0)
                 name = self.gripper_map[name]['left_finger']
                 res.joint_names.append(name)
             else:
@@ -816,18 +814,18 @@ class InterbotixRobotXS(Node):
                             new_val = value / self.timer_hz
                         else:
                             # treat 'pwm' and 'current' equivalently
-                            new_val = value / 2000.0
+                            new_val = value / 50000.0
                         self.joint_states.position[self.js_index_map[joint]] += new_val
                         if joint in self.gripper_map:
                             gpr = self.gripper_map[joint]
                             angle = self.joint_states.position[self.js_index_map[joint]]
-                            lin_pos = self.robot_convert_angular_position_to_linear(joint, angle)
+                            lin_pos = angle
                             self.joint_states.position[
                                 self.js_index_map[gpr['left_finger']]
                             ] = lin_pos
                             self.joint_states.position[
                                 self.js_index_map[gpr['right_finger']]
-                            ] = -lin_pos
+                            ] = lin_pos
 
             self.joint_states.header.stamp = self.get_clock().now().to_msg()
             self.pub_joint_states.publish(self.joint_states)

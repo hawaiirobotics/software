@@ -437,7 +437,7 @@
       xyz="-0.00106483764465011 0.00245590949658455 -0.410608968248641"
       rpy="0 0 1.97991331761951" />
     <parent
-      link="J6" />
+      link="finger_link" />
     <child
       link="Gripper_Left" />
     <axis
@@ -495,14 +495,14 @@
       xyz="-0.0218057092576579 0.0729165031249449 0.0746999999999995"
       rpy="-1.5707963267949 0 -2.73247566276518" />
     <parent
-      link="J6" />
+      link="finger_link" />
     <child
       link="Gripper_Right" />
     <axis
       xyz="0 0 1" />
     <limit
-      lower="0"
-      upper="0.057"
+      lower="-0.057"
+      upper="0"
       effort="0"
       velocity="0" />
     <mimic
@@ -510,4 +510,16 @@
       multiplier="1"
       offset="0" />
   </joint>
+    <joint name="gripper" type="fixed">
+    <origin rpy="0 0 0" xyz="0 0 0"/>
+    <parent link="J6"/>
+    <child link="finger_link"/>
+    <axis xyz="1 0 0"/>
+  </joint>
+  <link name="finger_link">
+    <inertial>
+      <mass value="0.001"/>
+      <inertia ixx="0.0001" ixy="0" ixz="0" iyy="0.0001" iyz="0" izz="0.0001"/>
+    </inertial>
+  </link>
 </robot>

@@ -1,10 +1,10 @@
 port: /dev/ttyDXL
 
-joint_order: [J1, J2, J3, J4, J5, J6, GL]
+joint_order: [J1, J2, J3, J4, J5, J6, gripper]
 sleep_positions: [0, 0, 0, 0, 0, 0, 0]
 
 joint_state_publisher:
-  update_rate: 100
+  update_rate: 30
   publish_states: true
   topic_name: joint_states
 
@@ -12,7 +12,7 @@ groups:
   arm: [J1, J2, J3, J4, J5, J6]
 
 grippers:
-  GL:
+  gripper:
     horn_radius: 0.022
     arm_length: 0.036
     left_finger: GL
@@ -96,7 +96,7 @@ motors:
     Max_Position_Limit: 4095
     Secondary_ID: 255
 
-  GL:
+  gripper:
     ID: 8
     Baud_Rate: 3
     Return_Delay_Time: 0

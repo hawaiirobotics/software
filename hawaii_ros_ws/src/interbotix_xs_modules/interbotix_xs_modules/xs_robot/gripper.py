@@ -208,7 +208,7 @@ class InterbotixGripperXSInterface:
             # stop the gripper if it has reached the lower or upper limit
             if (
                 self.gripper_command.cmd > 0
-                and gripper_pos >= self.left_finger_upper_limit
+                and gripper_pos >= self.left_finger_upper_limit #TODO make the operating band smaller to ensure we don't hit the limits
             ) or (
                 self.gripper_command.cmd < 0
                 and gripper_pos <= self.left_finger_lower_limit
