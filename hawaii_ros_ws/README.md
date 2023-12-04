@@ -21,3 +21,8 @@ Source ros workspace:
 Run launch file (launches Rviz):
 
 `ros2 launch hawaii_descriptions hawaii_descriptions.launch.py`
+
+# Teleop Software Architecture
+
+![hg](https://github.com/hawaiirobotics/software/assets/54551825/62a861b0-3dd4-4b38-8217-f54dcffa96fe)
+
