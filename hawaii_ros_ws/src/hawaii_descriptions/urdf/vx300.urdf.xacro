@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
-<robot name="hawaii" xmlns:xacro="http://ros.org/wiki/xacro">
+<robot name="vx300" xmlns:xacro="http://ros.org/wiki/xacro">
 
   <xacro:property name="robot_model"
-    value="hawaii"
+    value="vx300"
     scope="global"/>
   <xacro:property name="dof"
     value="5"
