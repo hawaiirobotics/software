@@ -11,8 +11,7 @@
   <depend>controller_manager</depend>
   <depend>effort_controllers</depend>
   <depend>joint_state_broadcaster</depend>
-  <depend>effort_controllers</depend>
-  <depend>effort_controllers</depend>
+  <?<depend>interbotix_xs_ros_control</depend>?>
   <depend>gazebo_ros</depend>
   <depend>gazebo_ros2_control</depend>
   <depend>joint_trajectory_controller</depend>

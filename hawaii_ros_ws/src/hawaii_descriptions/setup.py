@@ -15,6 +15,7 @@ setup(
         ('share/' + package_name, ['package.xml']),
         (os.path.join('share', package_name, 'launch'), glob(os.path.join('launch', '*launch.[pxy][yma]*'))),
   	(os.path.join('share', package_name, 'urdf'), glob('urdf/*')),
+  	(os.path.join('share', package_name, 'meshes'), glob('meshes/*.png')),
   	(os.path.join('share', package_name, 'meshes/hawaii_meshes'), glob('meshes/hawaii_meshes/*')),
   	(os.path.join('share', package_name, 'rviz'), glob('rviz/*')),
     ],
