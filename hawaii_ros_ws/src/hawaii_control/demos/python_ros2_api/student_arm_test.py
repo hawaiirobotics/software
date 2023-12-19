@@ -10,7 +10,8 @@ def main():
     bot = InterbotixManipulatorXS(
         robot_model='Student_Arm',
         group_name='arm',
-        gripper_name='gripper'
+        gripper_name='gripper',
+        robot_name='student_right'
     )
 
     bot.arm.go_to_sleep_pose()

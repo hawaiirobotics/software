@@ -24,10 +24,12 @@ def generate_launch_description():
     student_right_mode = LaunchConfiguration('student_modes_right')
     use_sim = LaunchConfiguration('use_sim')
 
-    x_spawn_left = '2'
+    x_spawn_left = '1'
     y_spawn_left = '0'
-    x_spawn_right = '-2'
+    yaw_spawn_left = '-1.57075'
+    x_spawn_right = '-1'
     y_spawn_right = '0'
+    yaw_spawn_right = '1.57075'
 
     model_path, plugin_path, media_path = GazeboRosPaths.get_paths()
 
@@ -66,7 +68,7 @@ def generate_launch_description():
             value=['']
         ),
 
-        ExecuteProcess(cmd=['gazebo', '--verbose','-s', 'libgazebo_ros_factory.so'], output='screen', additional_env=env,),
+        # ExecuteProcess(cmd=['gazebo', '--verbose','-s', 'libgazebo_ros_factory.so'], output='screen', additional_env=env,),
 
 
         GroupAction([
@@ -89,6 +91,7 @@ def generate_launch_description():
                     'use_sim': use_sim,
                     'x_spawn' : x_spawn_right,
                     'y_spawn' : y_spawn_right,
+                    'yaw_spawn' : yaw_spawn_right,
                 }.items()
             ),
         ]),
@@ -113,6 +116,7 @@ def generate_launch_description():
                     'use_sim': use_sim,
                     'x_spawn' : x_spawn_left,
                     'y_spawn' : y_spawn_left,
+                    'yaw_spawn' : yaw_spawn_left,
                 }.items()
             ),
         ]),
@@ -122,14 +126,14 @@ def generate_launch_description():
             executable='static_transform_publisher',
             name='student_left_transform_broadcaster',
             output='screen',
-            arguments=[x_spawn_left, y_spawn_left, '0', '0', '0', '0', '/world', f"/student_left/base_link"] #update x,y,z,and quats
+            arguments=[x_spawn_left, y_spawn_left, '0', yaw_spawn_left, '0', '0','/world', f"/student_left/base_link"] #update x,y,z,and quats
         ),
         Node(
             package='tf2_ros',
             executable='static_transform_publisher',
             name='student_right_transform_broadcaster',
             output='screen',
-            arguments=[x_spawn_right, y_spawn_right, '0', '0', '0', '0', '/world', f"/student_right/base_link"] #update x,y,z,and quats
+            arguments=[x_spawn_right, y_spawn_right, '0', yaw_spawn_right, '0', '0', '/world', f"/student_right/base_link"] #update x,y,z,and quats
         ),
 
         # Node(

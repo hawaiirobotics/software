@@ -47,6 +47,7 @@ from launch_ros.substitutions import FindPackageShare
 def launch_setup(context, *args, **kwargs):
     x_spawn = LaunchConfiguration('x_spawn').perform(context)
     y_spawn = LaunchConfiguration('y_spawn').perform(context)
+    yaw_spawn = LaunchConfiguration('yaw_spawn').perform(context)
     robot_name_launch_arg = LaunchConfiguration('robot_name').perform(context)
     use_rviz_launch_arg = LaunchConfiguration('use_rviz')
     use_joint_pub_launch_arg = LaunchConfiguration('use_joint_pub')
@@ -121,7 +122,7 @@ def launch_setup(context, *args, **kwargs):
         output="screen",
         arguments=['-entity',robot_name_launch_arg,
         '-robot_namespace', robot_name_launch_arg,          
-        '-x', x_spawn, '-y', y_spawn,
+        '-x', x_spawn, '-y', y_spawn, '-Y', yaw_spawn,
         '-topic', 'robot_description',
         '-timeout', '120.0']
     )
@@ -202,6 +203,12 @@ def generate_launch_description():
     declared_arguments.append(
         DeclareLaunchArgument(
             'y_spawn',
+            default_value='0',
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            'yaw_spawn',
             default_value='0',
         )
     )

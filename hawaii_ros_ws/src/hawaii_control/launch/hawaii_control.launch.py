@@ -91,7 +91,7 @@ def launch_setup(context, *args, **kwargs):
         package='interbotix_xs_sdk',
         executable='xs_sdk',
         name='xs_sdk',
-        namespace=robot_name_launch_arg,
+        # namespace=robot_name_launch_arg,
         arguments=[],
         parameters=[{
             'motor_configs': motor_configs_launch_arg,
@@ -109,7 +109,7 @@ def launch_setup(context, *args, **kwargs):
         package='interbotix_xs_sdk',
         executable='xs_sdk_sim.py',
         name='xs_sdk_sim',
-        namespace=robot_name_launch_arg,
+        # namespace=robot_name_launch_arg,
         arguments=[],
         parameters=[{
             'motor_configs': motor_configs_launch_arg,
