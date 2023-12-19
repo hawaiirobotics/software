@@ -45,9 +45,9 @@
   <link name="world"/>
   <joint name="fixed" type="fixed">
     <parent link="world"/>
-    <child link="base_link"/>
+    <child link="$(arg robot_name)/base_link"/>
   </joint>
-  <link name="base_link">
+  <link name="$(arg robot_name)/base_link">
     <inertial>
       <origin
         xyz="3.75969511884504E-08 0.0026277370286045 -0.0794517403190993"
@@ -86,7 +86,7 @@
       </geometry>
     </collision>
   </link>
-  <link name="J1">
+  <link name="$(arg robot_name)/J1">
     <inertial>
       <origin
         xyz="8.00258875598234E-17 -0.043916645765684 -0.000151589790021581"
@@ -131,9 +131,9 @@
       xyz="0 0 0"
       rpy="1.5708 0 0" />
     <parent
-      link="base_link" />
+      link="$(arg robot_name)/base_link" />
     <child
-      link="J1" />
+      link="$(arg robot_name)/J1" />
     <axis
       xyz="0 1 0" />
     <limit
@@ -142,7 +142,7 @@
       upper="${J1_limit_upper}"
       velocity="${J1_limit_vel}"/>
   </joint>
-  <link name="J2">
+  <link name="$(arg robot_name)/J2">
     <inertial>
       <origin
         xyz="-0.0106610998558658 0.0996577699603199 -0.0225833036054658"
@@ -188,9 +188,9 @@
       xyz="0.0221 0 0"
       rpy="1.5708 1.0391 1.5708" />
     <parent
-      link="J1" />
+      link="$(arg robot_name)/J1" />
     <child
-      link="J2" />
+      link="$(arg robot_name)/J2" />
     <axis
       xyz="0 0 -1" />
     <limit
@@ -200,7 +200,7 @@
       velocity="${J2_limit_vel}"/>
   </joint>
   <link
-    name="J3">
+    name="$(arg robot_name)/J3">
     <inertial>
       <origin
         xyz="-5.4174E-06 -0.095818 0.018544"
@@ -246,9 +246,9 @@
       xyz="-0.06275 0.242 0"
       rpy="-3.1416 0 1.8245" />
     <parent
-      link="J2" />
+      link="$(arg robot_name)/J2" />
     <child
-      link="J3" />
+      link="$(arg robot_name)/J3" />
     <axis
       xyz="0 0 1" />
     <limit
@@ -258,7 +258,7 @@
       velocity="${J3_limit_vel}"/>
   </joint>
   <link
-    name="J4">
+    name="$(arg robot_name)/J4">
     <inertial>
       <origin
         xyz="0.000220187546183284 0.00131330393669656 -0.00131330397228391"
@@ -304,9 +304,9 @@
       xyz="0 -0.232125103077643 0.0220999999999999"
       rpy="0.785398163397452 1.5707963267949 0" />
     <parent
-      link="J3" />
+      link="$(arg robot_name)/J3" />
     <child
-      link="J4" />
+      link="$(arg robot_name)/J4" />
     <axis
       xyz="0 0.707106781186543 -0.707106781186552" />
     <limit
@@ -316,7 +316,7 @@
       velocity="${J4_limit_vel}"/>
   </joint>
   <link
-    name="J5">
+    name="$(arg robot_name)/J5">
     <inertial>
       <origin
         xyz="-0.019335080438349 0.0351625780910085 7.23341200059109E-05"
@@ -362,9 +362,9 @@
       xyz="0 -0.012639 0.012639"
       rpy="1.5708 0.80221 1.5708" />
     <parent
-      link="J4" />
+      link="$(arg robot_name)/J4" />
     <child
-      link="J5" />
+      link="$(arg robot_name)/J5" />
     <axis
       xyz="0 0 1" />
     <limit
@@ -374,7 +374,7 @@
       velocity="${J5_limit_vel}"/>
   </joint>
   <link
-    name="J6">
+    name="$(arg robot_name)/J6">
     <inertial>
       <origin
         xyz="-0.0064673240335944 -0.00293644104444194 0.047256336077668"
@@ -420,9 +420,9 @@
       xyz="-0.0410888768161758 0.0397298912546164 0"
       rpy="1.5707963267949 0.409116990824611 -2.33938085233866" />
     <parent
-      link="J5" />
+      link="$(arg robot_name)/J5" />
     <child
-      link="J6" />
+      link="$(arg robot_name)/J6" />
     <axis
       xyz="0 0 1" />
     <limit
@@ -432,7 +432,7 @@
       velocity="${J6_limit_vel}"/>
   </joint>
   <link
-    name="Gripper_Left">
+    name="$(arg robot_name)/Gripper_Left">
     <inertial>
       <origin
         xyz="-0.043578 0.0054586 0.50483"
@@ -478,9 +478,9 @@
       xyz="-0.00106483764465011 0.00245590949658455 -0.410608968248641"
       rpy="0 0 1.97991331761951" />
     <parent
-      link="finger_link" />
+      link="$(arg robot_name)/finger_link" />
     <child
-      link="Gripper_Left" />
+      link="$(arg robot_name)/Gripper_Left" />
     <axis
       xyz="1 0 0" />
     <limit
@@ -490,7 +490,7 @@
       velocity="${GL_limit_vel}"/>
   </joint>
   <link
-    name="Gripper_Right">
+    name="$(arg robot_name)/Gripper_Right">
     <inertial>
       <origin
         xyz="0.0035414 -0.019521 0.034672"
@@ -536,9 +536,9 @@
       xyz="-0.0218057092576579 0.0729165031249449 0.0746999999999995"
       rpy="-1.5707963267949 0 -2.73247566276518" />
     <parent
-      link="finger_link" />
+      link="$(arg robot_name)/finger_link" />
     <child
-      link="Gripper_Right" />
+      link="$(arg robot_name)/Gripper_Right" />
     <axis
       xyz="0 0 1" />
     <limit
@@ -558,13 +558,13 @@
       xyz="0 0 0"
       rpy="0 0 0" />
     <parent
-      link="J6" />
+      link="$(arg robot_name)/J6" />
     <child
-      link="finger_link" />
+      link="$(arg robot_name)/finger_link" />
     <axis
       xyz="1 0 0" />
   </joint>
-  <link name="finger_link">
+  <link name="$(arg robot_name)/finger_link">
   <inertial>
     <mass value="0.001"/>
     <inertia
