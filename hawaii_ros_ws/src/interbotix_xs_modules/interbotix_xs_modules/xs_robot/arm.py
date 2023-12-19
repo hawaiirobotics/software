@@ -79,6 +79,7 @@ class InterbotixManipulatorXS:
         logging_level: LoggingSeverity = LoggingSeverity.INFO,
         node_name: str = 'robot_manipulation',
         start_on_init: bool = True,
+        init_node: bool = True,
         args=None,
     ) -> None:
         """
@@ -118,12 +119,15 @@ class InterbotixManipulatorXS:
             either call the `start()` method later on, or add the core to an executor in another
             thread.
         """
+
+        self.init_node = init_node
         self.core = InterbotixRobotXSCore(
             robot_model=robot_model,
             robot_name=robot_name,
             topic_joint_states=topic_joint_states,
             logging_level=logging_level,
             node_name=node_name,
+            init_node=init_node,
             args=args
         )
 
@@ -162,7 +166,8 @@ class InterbotixManipulatorXS:
     def shutdown(self) -> None:
         """Destroy the node and shut down all threads and processes."""
         self.core.destroy_node()
-        rclpy.shutdown()
+        if self.init_node:
+            rclpy.shutdown()
         self._execution_thread.join()
         time.sleep(0.5)
 

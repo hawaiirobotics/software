@@ -1,40 +1,63 @@
 #!/usr/bin/env python3
 
 import sys
+import threading
 
 from interbotix_xs_modules.xs_robot.arm import InterbotixManipulatorXS
 import numpy as np
 
+def operateBotR(botR):
+    botR.arm.set_single_joint_position(joint_name='Joint1', position=np.pi/2.0)
+    botR.arm.set_single_joint_position(joint_name='Joint2', position=0.728)
+    botR.gripper.release()
+    botR.gripper.grasp()
+    botR.gripper.release()
+    botR.gripper.grasp()
+    botR.arm.set_single_joint_position(joint_name='Joint1', position=-np.pi/2.0)
+    botR.arm.set_single_joint_position(joint_name='Joint3', position=-0.528)
+    botR.arm.go_to_home_pose()
+   
+
+def operateBotL(botL):
+    botL.arm.set_single_joint_position(joint_name='Joint1', position=np.pi/2.0)
+    botL.arm.set_single_joint_position(joint_name='Joint2', position=0.728)
+    botL.gripper.release()
+    botL.gripper.grasp()
+    botL.gripper.release()
+    botL.gripper.grasp()
+    botL.arm.set_single_joint_position(joint_name='Joint1', position=-np.pi/2.0)
+    botL.arm.set_single_joint_position(joint_name='Joint3', position=-0.528)
+    botL.arm.go_to_home_pose()
+   
 def main():
     
-    bot = InterbotixManipulatorXS(
+    botR = InterbotixManipulatorXS(
         robot_model='Student_Arm',
         group_name='arm',
         gripper_name='gripper',
-        robot_name='student_right'
+        robot_name='student_right',
+        init_node=True,
+    )
+    botL = InterbotixManipulatorXS(
+        robot_model='Student_Arm',
+        group_name='arm',
+        gripper_name='gripper',
+        robot_name='student_left',
+        init_node=False, #INterbotixManipulatorXS initializes rclpy, which can only be done once
+        # set this to false to prevent initializing again
     )
 
-    bot.arm.go_to_sleep_pose()
-    #bot.arm.set_ee_pose_components(x=0.3, z=0.2)
-    #bot.arm.set_single_joint_position(joint_name='J1', position=np.pi/2.0)
-    #bot.arm.set_single_joint_position(joint_name='J2', position=0.728)
-    bot.gripper.release()
+    threadR = threading.Thread(target=operateBotR, args=(botR,))
+    threadL = threading.Thread(target=operateBotL, args=(botL,))
 
-    #bot.arm.set_ee_cartesian_trajectory(x=0.1, z=-0.16)
-    bot.gripper.grasp()
-    #bot.arm.set_ee_cartesian_trajectory(x=-0.1, z=0.16)
-    # bot.arm.set_single_joint_position(joint_name='J1', position=-np.pi/2.0)
-    # bot.arm.set_single_joint_position(joint_name='J3', position=-0.528)
-    #bot.arm.set_ee_cartesian_trajectory(pitch=1.5)
-    #bot.arm.set_ee_cartesian_trajectory(pitch=-1.5)
-    # bot.arm.set_single_joint_position(joint_name='J1', position=np.pi/2.0)
-    #bot.arm.set_ee_cartesian_trajectory(x=0.1, z=-0.16)
-    bot.gripper.release()
-    #bot.arm.set_ee_cartesian_trajectory(x=-0.1, z=0.16)
-    bot.arm.go_to_home_pose()
-    bot.arm.go_to_sleep_pose()
+    threadR.start()
+    threadL.start()
 
-    bot.shutdown()
+    threadR.join()
+    threadL.join()
+
+    botR.shutdown()
+    botL.shutdown()
 
 
 if __name__ == '__main__':

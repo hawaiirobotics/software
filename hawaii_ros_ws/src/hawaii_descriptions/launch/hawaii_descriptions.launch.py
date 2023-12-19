@@ -113,26 +113,26 @@ def launch_setup(context, *args, **kwargs):
         output={'both': 'log'},
     )
 
-    gazebo_node = Node(
-        condition=IfCondition(use_gazebo_launch_arg),
-        package='gazebo_ros',
-        executable='spawn_entity.py',
-        name="spawn_entity",
-        # namespace=robot_name_launch_arg,
-        output="screen",
-        arguments=['-entity',robot_name_launch_arg,
-        '-robot_namespace', robot_name_launch_arg,          
-        '-x', x_spawn, '-y', y_spawn, '-Y', yaw_spawn,
-        '-topic', 'robot_description',
-        '-timeout', '120.0']
-    )
+    # gazebo_node = Node(
+    #     condition=IfCondition(use_gazebo_launch_arg),
+    #     package='gazebo_ros',
+    #     executable='spawn_entity.py',
+        # name="spawn_entity",
+        # # namespace=robot_name_launch_arg,
+        # output="screen",
+        # arguments=['-entity',robot_name_launch_arg,
+        # '-robot_namespace', robot_name_launch_arg,          
+    #     '-x', x_spawn, '-y', y_spawn, '-Y', yaw_spawn,
+    #     '-topic', 'robot_description',
+    #     '-timeout', '120.0']
+    # )
 
     return [
         robot_state_publisher_node,
         joint_state_publisher_node,
         joint_state_publisher_gui_node,
         rviz2_node,
-        gazebo_node,
+        # gazebo_node,
     ]
 
 

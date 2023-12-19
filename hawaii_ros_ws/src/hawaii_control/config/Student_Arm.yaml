@@ -1,6 +1,6 @@
 port: /dev/ttyDXL
 
-joint_order: [J1, J2, J3, J4, J5, J6, gripper]
+joint_order: [Joint1, Joint2, Joint3, Joint4, Joint5, Joint6, gripper]
 sleep_positions: [0, 0, 0, 0, 0, 0, 0]
 
 joint_state_publisher:
@@ -9,7 +9,7 @@ joint_state_publisher:
   topic_name: joint_states
 
 groups:
-  arm: [J1, J2, J3, J4, J5, J6]
+  arm: [Joint1, Joint2, Joint3, Joint4, Joint5, Joint6]
 
 grippers:
   gripper:
@@ -19,14 +19,14 @@ grippers:
     right_finger: GR
 
 shadows:
-  J1:
-    shadow_list: [J1_shadow]
+  Joint1:
+    shadow_list: [Joint1_shadow]
     calibrate: true
 
 sisters:
 
 motors:
-  J1:
+  Joint1:
     ID: 1
     Baud_Rate: 3
     Return_Delay_Time: 0
@@ -36,7 +36,7 @@ motors:
     Max_Position_Limit: 4095
     Secondary_ID: 255
     
-  J1_shadow:
+  Joint1_shadow:
     ID: 2
     Baud_Rate: 3
     Return_Delay_Time: 0
@@ -46,7 +46,7 @@ motors:
     Max_Position_Limit: 4095
     Secondary_ID: 1
 
-  J2:
+  Joint2:
     ID: 3
     Baud_Rate: 3
     Return_Delay_Time: 0
@@ -56,7 +56,7 @@ motors:
     Max_Position_Limit: 2867
     Secondary_ID: 255
 
-  J3:
+  Joint3:
     ID: 4
     Baud_Rate: 3
     Return_Delay_Time: 0
@@ -66,7 +66,7 @@ motors:
     Max_Position_Limit: 3094
     Secondary_ID: 255
 
-  J4:
+  Joint4:
     ID: 5
     Baud_Rate: 3
     Return_Delay_Time: 0
@@ -76,7 +76,7 @@ motors:
     Max_Position_Limit: 3504
     Secondary_ID: 255
 
-  J5:
+  Joint5:
     ID: 6
     Baud_Rate: 3
     Return_Delay_Time: 0
@@ -86,7 +86,7 @@ motors:
     Max_Position_Limit: 4095
     Secondary_ID: 255
     
-  J6:
+  Joint6:
     ID: 7
     Baud_Rate: 3
     Return_Delay_Time: 0

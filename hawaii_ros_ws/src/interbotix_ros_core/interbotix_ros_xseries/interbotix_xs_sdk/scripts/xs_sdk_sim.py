@@ -119,7 +119,7 @@ class InterbotixRobotXS(Node):
     file"""
 
     def __init__(self):
-        """Construct the InterbotixRobotXS simulaiton node."""
+        """Construct the InterbotixRobotXS simulation node."""
         super().__init__('xs_sdk_sim')
 
         self.declare_parameter('motor_configs', '')
