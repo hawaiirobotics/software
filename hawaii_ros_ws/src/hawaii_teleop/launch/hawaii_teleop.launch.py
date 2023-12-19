@@ -13,7 +13,7 @@ from launch.substitutions import (
 from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
 from launch.launch_description_sources import PythonLaunchDescriptionSource
-from pathlib import Path
+from scripts import GazeboRosPaths
 
 def generate_launch_description():
 
@@ -28,6 +28,14 @@ def generate_launch_description():
     y_spawn_left = '0'
     x_spawn_right = '-2'
     y_spawn_right = '0'
+
+    model_path, plugin_path, media_path = GazeboRosPaths.get_paths()
+
+    env = {
+        "GAZEBO_MODEL_PATH": model_path,
+        "GAZEBO_PLUGIN_PATH": plugin_path,
+        "GAZEBO_RESOURCE_PATH": media_path,
+    }
 
 
     return LaunchDescription([
@@ -46,15 +54,6 @@ def generate_launch_description():
                                                 ])),
         DeclareLaunchArgument('use_sim', default_value='true'),
 
-        SetEnvironmentVariable(
-        name='GAZEBO_MODEL_PATH',
-        value=[
-            EnvironmentVariable('GAZEBO_MODEL_PATH', default_value=''),
-            '/usr/share/gazebo-11/models/',
-            ':',
-            str(PathJoinSubstitution([FindPackageShare('hawaii_descriptions')]))]
-        ),
-
         # Set GAZEBO_MODEL_URI to empty string to prevent Gazebo from downloading models
         SetEnvironmentVariable(
             name='GAZEBO_MODEL_URI',
@@ -67,7 +66,8 @@ def generate_launch_description():
             value=['']
         ),
 
-        ExecuteProcess(cmd=['gazebo', '--verbose','-s', 'libgazebo_ros_factory.so'], output='screen'),
+        ExecuteProcess(cmd=['gazebo', '--verbose','-s', 'libgazebo_ros_factory.so'], output='screen', additional_env=env,),
+
 
         IncludeLaunchDescription(
             PythonLaunchDescriptionSource([
@@ -88,6 +88,7 @@ def generate_launch_description():
                 'y_spawn' : y_spawn_right,
             }.items()
         ),
+
         IncludeLaunchDescription(
             PythonLaunchDescriptionSource([
                 PathJoinSubstitution([

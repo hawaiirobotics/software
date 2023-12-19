@@ -82,6 +82,7 @@ def launch_setup(context, *args, **kwargs):
             'use_rviz': use_rviz_launch_arg,
             'robot_description': robot_description_launch_arg,
             'use_sim_time': use_sim_time_param,
+            'use_joint_pub_gui' : 'false'
         }.items(),
     )
 
