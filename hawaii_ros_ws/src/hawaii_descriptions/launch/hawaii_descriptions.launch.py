@@ -63,27 +63,21 @@ def launch_setup(context, *args, **kwargs):
         hardware_type_launch_arg=hardware_type_launch_arg
     )
 
-    # frame_prefix_value = robot_name_launch_arg + '/'
-
     robot_state_publisher_node = Node(
         package='robot_state_publisher',
         executable='robot_state_publisher',
         parameters=[{
-            # 'frame_prefix': frame_prefix_value,
             'robot_description': robot_description_launch_arg,
             'use_sim_time': use_sim_time_param
         }],
-        # namespace=robot_name_launch_arg,
         output={'both': 'log'},
     )
 
     joint_state_publisher_node = Node(
-        condition=UnlessCondition(use_joint_pub_gui_launch_arg),
+        condition=IfCondition(use_joint_pub_launch_arg),
         package='joint_state_publisher',
         executable='joint_state_publisher',
-        # namespace=robot_name_launch_arg,
         parameters=[{
-            # 'frame_prefix': frame_prefix_value,
             'robot_description': robot_description_launch_arg,
             'use_sim_time': use_sim_time_param   
         }],
@@ -94,7 +88,6 @@ def launch_setup(context, *args, **kwargs):
         condition=IfCondition(use_joint_pub_gui_launch_arg),
         package='joint_state_publisher_gui',
         executable='joint_state_publisher_gui',
-        # namespace=robot_name_launch_arg,
         output={'both': 'log'},
     )
 
@@ -103,7 +96,6 @@ def launch_setup(context, *args, **kwargs):
         package='rviz2',
         executable='rviz2',
         name='rviz2',
-        # namespace=robot_name_launch_arg,
         arguments=[
             '-d', rvizconfig_launch_arg,
         ],

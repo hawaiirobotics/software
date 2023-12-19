@@ -255,7 +255,7 @@ class InterbotixGripperXSInterface:
 
         :param delay: (optional) number of seconds to delay before returning control to the user
         """
-        self.gripper_controller(self.gripper_value, delay)
+        self.gripper_controller(-self.gripper_value, delay)
 
     def grasp(self, delay: float = 1.0) -> None:
         """
@@ -263,4 +263,4 @@ class InterbotixGripperXSInterface:
 
         :param delay: (optional) number of seconds to delay before returning control to the user
         """
-        self.gripper_controller(-self.gripper_value, delay)
+        self.gripper_controller(self.gripper_value, delay)
