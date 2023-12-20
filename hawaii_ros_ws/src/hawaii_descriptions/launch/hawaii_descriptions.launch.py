@@ -26,9 +26,6 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from interbotix_xs_modules.xs_common import (
-    get_interbotix_xsarm_models,
-)
 from interbotix_xs_modules.xs_launch import (
     declare_interbotix_xsarm_robot_description_launch_arguments,
 )
