@@ -2,9 +2,9 @@ from launch import LaunchDescription
 from launch.actions import (
     DeclareLaunchArgument,
     IncludeLaunchDescription,
-    ExecuteProcess,
     SetEnvironmentVariable,
-    GroupAction
+    GroupAction,
+    ExecuteProcess
 )
 from launch.substitutions import (
     LaunchConfiguration,
@@ -24,12 +24,12 @@ def generate_launch_description():
     student_right_mode = LaunchConfiguration('student_modes_right')
     use_sim = LaunchConfiguration('use_sim')
 
-    x_spawn_left = '1'
-    y_spawn_left = '0'
-    yaw_spawn_left = '-1.57075'
-    x_spawn_right = '-1'
-    y_spawn_right = '0'
-    yaw_spawn_right = '1.57075'
+    # x_spawn_left = '1'
+    # y_spawn_left = '0'
+    # yaw_spawn_left = '-1.57075'
+    # x_spawn_right = '-1'
+    # y_spawn_right = '0'
+    # yaw_spawn_right = '1.57075'
 
     model_path, plugin_path, media_path = GazeboRosPaths.get_paths()
 
@@ -38,7 +38,6 @@ def generate_launch_description():
         "GAZEBO_PLUGIN_PATH": plugin_path,
         "GAZEBO_RESOURCE_PATH": media_path,
     }
-
 
     return LaunchDescription([
         DeclareLaunchArgument('robot_model', default_value='Student_Arm'),
@@ -56,21 +55,20 @@ def generate_launch_description():
                                                 ])),
         DeclareLaunchArgument('use_sim', default_value='true'),
 
-        # Set GAZEBO_MODEL_URI to empty string to prevent Gazebo from downloading models
-        SetEnvironmentVariable(
-            name='GAZEBO_MODEL_URI',
-            value=['']
-        ),
+        # # Set GAZEBO_MODEL_URI to empty string to prevent Gazebo from downloading models
+        # SetEnvironmentVariable(
+        #     name='GAZEBO_MODEL_URI',
+        #     value=['']
+        # ),
 
-        # Set GAZEBO_MODEL_DATABASE_URI to empty string to prevent Gazebo from downloading models
-        SetEnvironmentVariable(
-            name='GAZEBO_MODEL_DATABASE_URI',
-            value=['']
-        ),
-
-        # ExecuteProcess(cmd=['gazebo', '--verbose','-s', 'libgazebo_ros_factory.so'], output='screen', additional_env=env,),
+        # # Set GAZEBO_MODEL_DATABASE_URI to empty string to prevent Gazebo from downloading models
+        # SetEnvironmentVariable(
+        #     name='GAZEBO_MODEL_DATABASE_URI',
+        #     value=['']
+        # ),
 
 
+        # ExecuteProcess(cmd=['gazebo', '--verbose','-s', 'libgazebo_ros_factory.so'], output='screen', additional_env=env),
         GroupAction([
             # Instances use the robot's name for namespace
             PushRosNamespace(student_right_name),
@@ -89,9 +87,9 @@ def generate_launch_description():
                     'use_rviz': 'true',
                     'mode_configs': student_right_mode,
                     'use_sim': use_sim,
-                    'x_spawn' : x_spawn_right,
-                    'y_spawn' : y_spawn_right,
-                    'yaw_spawn' : yaw_spawn_right,
+                    # 'x_spawn' : x_spawn_right,
+                    # 'y_spawn' : y_spawn_right,
+                    # 'yaw_spawn' : yaw_spawn_right,
                 }.items()
             ),
         ]),
@@ -114,27 +112,27 @@ def generate_launch_description():
                     'use_rviz': 'false',
                     'mode_configs': student_left_mode,
                     'use_sim': use_sim,
-                    'x_spawn' : x_spawn_left,
-                    'y_spawn' : y_spawn_left,
-                    'yaw_spawn' : yaw_spawn_left,
+                    # 'x_spawn' : x_spawn_left,
+                    # 'y_spawn' : y_spawn_left,
+                    # 'yaw_spawn' : yaw_spawn_left,
                 }.items()
             ),
         ]),
 
-        Node(
-            package='tf2_ros',
-            executable='static_transform_publisher',
-            name='student_left_transform_broadcaster',
-            output='screen',
-            arguments=[x_spawn_left, y_spawn_left, '0', yaw_spawn_left, '0', '0','/world', f"/student_left/base_link"] #update x,y,z,and quats
-        ),
-        Node(
-            package='tf2_ros',
-            executable='static_transform_publisher',
-            name='student_right_transform_broadcaster',
-            output='screen',
-            arguments=[x_spawn_right, y_spawn_right, '0', yaw_spawn_right, '0', '0', '/world', f"/student_right/base_link"] #update x,y,z,and quats
-        ),
+        # Node(
+        #     package='tf2_ros',
+        #     executable='static_transform_publisher',
+        #     name='student_left_transform_broadcaster',
+        #     output='screen',
+        #     arguments=[x_spawn_left, y_spawn_left, '0', '0', '0', '-0.707090', '0.707123','/world', f"/student_left/base_link"] #update x,y,z,and quats
+        # ),
+        # Node(
+        #     package='tf2_ros',
+        #     executable='static_transform_publisher',
+        #     name='student_right_transform_broadcaster',
+        #     output='screen',
+        #     arguments=[x_spawn_right, y_spawn_right, '0', '0', '0', '0.707090', '0.707123','/world', f"/student_right/base_link"] #update x,y,z,and quats
+        # ),
 
         # Node(
         #     package='usb_cam',
