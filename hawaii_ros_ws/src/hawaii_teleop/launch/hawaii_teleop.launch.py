@@ -67,8 +67,8 @@ def generate_launch_description():
         #     value=['']
         # ),
 
-
         # ExecuteProcess(cmd=['gazebo', '--verbose','-s', 'libgazebo_ros_factory.so'], output='screen', additional_env=env),
+        
         GroupAction([
             # Instances use the robot's name for namespace
             PushRosNamespace(student_right_name),

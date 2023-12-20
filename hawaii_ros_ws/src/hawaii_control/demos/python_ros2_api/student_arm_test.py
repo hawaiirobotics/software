@@ -9,6 +9,8 @@ import numpy as np
 def operateBotR(botR):
     botR.arm.set_single_joint_position(joint_name='Joint1', position=np.pi/2.0)
     botR.arm.set_single_joint_position(joint_name='Joint2', position=0.728)
+    botR.arm.set_single_joint_position(joint_name='Joint4', position=np.pi/2.0)
+    botR.arm.set_single_joint_position(joint_name='Joint5', position=0.728)
     botR.gripper.release()
     botR.gripper.grasp()
     botR.gripper.release()
@@ -21,6 +23,8 @@ def operateBotR(botR):
 def operateBotL(botL):
     botL.arm.set_single_joint_position(joint_name='Joint1', position=np.pi/2.0)
     botL.arm.set_single_joint_position(joint_name='Joint2', position=0.728)
+    botL.arm.set_single_joint_position(joint_name='Joint4', position=np.pi/2.0)
+    botL.arm.set_single_joint_position(joint_name='Joint5', position=0.728)
     botL.gripper.release()
     botL.gripper.grasp()
     botL.gripper.release()
