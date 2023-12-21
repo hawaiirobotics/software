@@ -92,6 +92,7 @@ def launch_setup(context, *args, **kwargs):
         package='joint_state_publisher_gui',
         executable='joint_state_publisher_gui',
         output={'both': 'log'},
+        namespace=namespace
     )
 
     rviz2_node = Node(
