@@ -58,6 +58,8 @@ def launch_setup(context, *args, **kwargs):
     robot_description_launch_arg = LaunchConfiguration('robot_description')
     hardware_type_launch_arg = LaunchConfiguration('hardware_type')
     xs_driver_logging_level_launch_arg = LaunchConfiguration('xs_driver_logging_level')
+    rvizconfig_launch_arg = LaunchConfiguration('rvizconfig')
+    using_one_arm = LaunchConfiguration('one_arm').perform(context)
 
     # sets use_sim_time parameter to 'true' if using gazebo hardware
     use_sim_time_param = determine_use_sim_time_param(
@@ -79,16 +81,22 @@ def launch_setup(context, *args, **kwargs):
             'use_rviz': use_rviz_launch_arg,
             'robot_description': robot_description_launch_arg,
             'use_sim_time': use_sim_time_param,
-            'use_joint_pub_gui' : 'false'
+            'use_joint_pub_gui' : 'false',
+            'rviz_config' : rvizconfig_launch_arg,
+            'one_arm' : using_one_arm,
         }.items(),
     )
+
+    namespace = None
+    if using_one_arm == 'true':
+        namespace = robot_name_launch_arg
 
     xs_sdk_node = Node(
         condition=UnlessCondition(use_sim_launch_arg),
         package='interbotix_xs_sdk',
         executable='xs_sdk',
         name='xs_sdk',
-        # namespace=robot_name_launch_arg,
+        namespace=namespace,
         arguments=[],
         parameters=[{
             'motor_configs': motor_configs_launch_arg,
@@ -100,13 +108,13 @@ def launch_setup(context, *args, **kwargs):
         }],
         output={'both': 'screen'},
     )
-
+    
     xs_sdk_sim_node = Node(
         condition=IfCondition(use_sim_launch_arg),
         package='interbotix_xs_sdk',
         executable='xs_sdk_sim.py',
         name='xs_sdk_sim',
-        # namespace=robot_name_launch_arg,
+        namespace=namespace,
         arguments=[],
         parameters=[{
             'motor_configs': motor_configs_launch_arg,
@@ -217,6 +225,24 @@ def generate_launch_description():
                 'published over the ROS topic /clock; this value is automatically set to `true` if'
                 ' using Gazebo hardware.'
             )
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            'rvizconfig',
+            default_value=PathJoinSubstitution([
+                FindPackageShare('hawaii_descriptions'),
+                'rviz',
+                'hawaii.rviz',
+            ]),
+            description='file path to the config file RViz should load.',
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            'one_arm',
+            default_value='true',
+            description='Only launching one arm in total.',
         )
     )
     declared_arguments.extend(

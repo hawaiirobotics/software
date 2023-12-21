@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 
-import sys
 import threading
 
 from interbotix_xs_modules.xs_robot.arm import InterbotixManipulatorXS
@@ -47,7 +46,7 @@ def main():
         group_name='arm',
         gripper_name='gripper',
         robot_name='student_left',
-        init_node=False, #INterbotixManipulatorXS initializes rclpy, which can only be done once
+        init_node=False, #InterbotixManipulatorXS initializes rclpy, which can only be done once
         # set this to false to prevent initializing again
     )
 

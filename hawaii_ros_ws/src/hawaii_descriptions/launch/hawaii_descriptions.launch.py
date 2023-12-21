@@ -53,12 +53,17 @@ def launch_setup(context, *args, **kwargs):
     robot_description_launch_arg = LaunchConfiguration('robot_description')
     hardware_type_launch_arg = LaunchConfiguration('hardware_type')
     use_gazebo_launch_arg = LaunchConfiguration('gazebo_config')
+    using_one_arm = LaunchConfiguration('one_arm').perform(context)
 
     # sets use_sim_time parameter to 'true' if using gazebo hardware
     use_sim_time_param = determine_use_sim_time_param(
         context=context,
         hardware_type_launch_arg=hardware_type_launch_arg
     )
+
+    namespace = None
+    if using_one_arm == 'true':
+        namespace = robot_name_launch_arg
 
     robot_state_publisher_node = Node(
         package='robot_state_publisher',
@@ -68,6 +73,7 @@ def launch_setup(context, *args, **kwargs):
             'use_sim_time': use_sim_time_param
         }],
         output={'both': 'log'},
+        namespace=namespace
     )
 
     joint_state_publisher_node = Node(
@@ -210,6 +216,13 @@ def generate_launch_description():
                 'tells ROS nodes asking for time to get the Gazebo-published simulation time, '
                 'published over the ROS topic /clock.'
             )
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            'one_arm',
+            default_value='true',
+            description='Only launching one arm in total.'
         )
     )
     declared_arguments.extend(
