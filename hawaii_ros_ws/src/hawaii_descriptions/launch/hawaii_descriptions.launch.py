@@ -26,16 +26,13 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from interbotix_xs_modules.xs_common import (
-    get_interbotix_xsarm_models,
-)
 from interbotix_xs_modules.xs_launch import (
     declare_interbotix_xsarm_robot_description_launch_arguments,
 )
 from interbotix_xs_modules.xs_launch.xs_launch import determine_use_sim_time_param
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument, OpaqueFunction
-from launch.conditions import IfCondition
+from launch.conditions import IfCondition, UnlessCondition
 from launch.substitutions import (
     LaunchConfiguration,
     PathJoinSubstitution,
@@ -45,13 +42,18 @@ from launch_ros.substitutions import FindPackageShare
 
 
 def launch_setup(context, *args, **kwargs):
-    robot_name_launch_arg = LaunchConfiguration('robot_name')
+    x_spawn = LaunchConfiguration('x_spawn').perform(context)
+    y_spawn = LaunchConfiguration('y_spawn').perform(context)
+    yaw_spawn = LaunchConfiguration('yaw_spawn').perform(context)
+    robot_name_launch_arg = LaunchConfiguration('robot_name').perform(context)
     use_rviz_launch_arg = LaunchConfiguration('use_rviz')
     use_joint_pub_launch_arg = LaunchConfiguration('use_joint_pub')
     use_joint_pub_gui_launch_arg = LaunchConfiguration('use_joint_pub_gui')
     rvizconfig_launch_arg = LaunchConfiguration('rvizconfig')
     robot_description_launch_arg = LaunchConfiguration('robot_description')
     hardware_type_launch_arg = LaunchConfiguration('hardware_type')
+    use_gazebo_launch_arg = LaunchConfiguration('gazebo_config')
+    using_one_arm = LaunchConfiguration('one_arm').perform(context)
 
     # sets use_sim_time parameter to 'true' if using gazebo hardware
     use_sim_time_param = determine_use_sim_time_param(
@@ -59,24 +61,28 @@ def launch_setup(context, *args, **kwargs):
         hardware_type_launch_arg=hardware_type_launch_arg
     )
 
+    namespace = None
+    if using_one_arm == 'true':
+        namespace = robot_name_launch_arg
+
     robot_state_publisher_node = Node(
         package='robot_state_publisher',
         executable='robot_state_publisher',
         parameters=[{
             'robot_description': robot_description_launch_arg,
-            'use_sim_time': use_sim_time_param,
+            'use_sim_time': use_sim_time_param
         }],
-        namespace=robot_name_launch_arg,
         output={'both': 'log'},
+        namespace=namespace
     )
 
     joint_state_publisher_node = Node(
         condition=IfCondition(use_joint_pub_launch_arg),
         package='joint_state_publisher',
         executable='joint_state_publisher',
-        namespace=robot_name_launch_arg,
         parameters=[{
-            'use_sim_time': use_sim_time_param,
+            'robot_description': robot_description_launch_arg,
+            'use_sim_time': use_sim_time_param   
         }],
         output={'both': 'log'},
     )
@@ -85,7 +91,6 @@ def launch_setup(context, *args, **kwargs):
         condition=IfCondition(use_joint_pub_gui_launch_arg),
         package='joint_state_publisher_gui',
         executable='joint_state_publisher_gui',
-        namespace=robot_name_launch_arg,
         output={'both': 'log'},
     )
 
@@ -94,7 +99,6 @@ def launch_setup(context, *args, **kwargs):
         package='rviz2',
         executable='rviz2',
         name='rviz2',
-        namespace=robot_name_launch_arg,
         arguments=[
             '-d', rvizconfig_launch_arg,
         ],
@@ -104,11 +108,26 @@ def launch_setup(context, *args, **kwargs):
         output={'both': 'log'},
     )
 
+    # gazebo_node = Node(
+    #     condition=IfCondition(use_gazebo_launch_arg),
+    #     package='gazebo_ros',
+    #     executable='spawn_entity.py',
+    #     name="spawn_entity",
+    #     # namespace=robot_name_launch_arg,
+    #     output="screen",
+    #     arguments=['-entity',robot_name_launch_arg,
+    #     '-robot_namespace', robot_name_launch_arg,          
+    #     '-x', x_spawn, '-y', y_spawn, '-Y', yaw_spawn,
+    #     '-topic', 'robot_description',
+    #     '-timeout', '120.0']
+    # )
+
     return [
         robot_state_publisher_node,
         joint_state_publisher_node,
         joint_state_publisher_gui_node,
         rviz2_node,
+        # gazebo_node,
     ]
 
 
@@ -166,6 +185,30 @@ def generate_launch_description():
     )
     declared_arguments.append(
         DeclareLaunchArgument(
+            'gazebo_config',
+            default_value='true',
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            'x_spawn',
+            default_value='0',
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            'y_spawn',
+            default_value='0',
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            'yaw_spawn',
+            default_value='0',
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
             'use_sim_time',
             default_value='true',
             choices=('true', 'false'),
@@ -173,6 +216,13 @@ def generate_launch_description():
                 'tells ROS nodes asking for time to get the Gazebo-published simulation time, '
                 'published over the ROS topic /clock.'
             )
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            'one_arm',
+            default_value='true',
+            description='Only launching one arm in total.'
         )
     )
     declared_arguments.extend(

@@ -66,6 +66,7 @@ class InterbotixRobotXSCore(Node):
         topic_joint_states: str = 'joint_states',
         logging_level: LoggingSeverity = LoggingSeverity.INFO,
         node_name: str = 'robot_manipulation',
+        init_node: bool = True,
         args=None
     ) -> None:
         """
@@ -93,7 +94,9 @@ class InterbotixRobotXSCore(Node):
         else:
             self.ns = f'/{self.robot_name}'
 
-        rclpy.init(args=args)
+        
+        if init_node:
+            rclpy.init(args=args)
         super().__init__(node_name=self.node_name, namespace=robot_name)
         set_logger_level(self.node_name, logging_level)
         self.get_logger().debug((
