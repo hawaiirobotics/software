@@ -1,4 +1,4 @@
-# To launch Rviz simulation:
+# Usage:
 
 **On first use:**
 
@@ -10,17 +10,30 @@ This will install all package dependencies for you.
 
 **Run in hawaii_ros_ws directory:**
 
-Build packages:
+1. Build packages:
 
 `colcon build`
 
-Source ros workspace:
+2. Source ros workspace:
 
 `source install/setup.bash`
 
-Run launch file (launches Rviz):
+3. Run launch file:
 
-`ros2 launch hawaii_descriptions hawaii_descriptions.launch.py`
+    ***To launch Rviz simulation on its own:***
+    
+    `ros2 launch hawaii_descriptions hawaii_descriptions.launch.py`
+    
+    ***To control a single arm:***
+    
+    `ros2 launch hawaii_control hawaii_control.launch.py use_sim:=<true or false>`
+    
+    true = run in simulation
+    false =  run on hardware
+  
+    ***To launch 2 arms for teleop***
+    
+    `bash hawaii_teleop.bash`
 
 # Teleop Software Architecture
 
