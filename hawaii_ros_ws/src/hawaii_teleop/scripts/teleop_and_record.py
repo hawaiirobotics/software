@@ -19,32 +19,18 @@ e = IPython.embed
 #             data = serial_port.readline().decode().strip()
 #             data_queue.put(data)  # Put the data into the shared queue
 
-# def teleop(data_queue):
-#     student_right = InterbotixManipulatorXS(robot_model="Student_Arm", group_name="arm", gripper_name="gripper", robot_name=f'student_right', init_node=True)
-#     student_left = InterbotixManipulatorXS(robot_model="Student_Arm", group_name="arm", gripper_name="gripper", robot_name=f'student_left', init_node=False)
-    
-#     gripper_command = JointSingleCommand(name="gripper")
+def print_dt_diagnosis(actual_dt_history):
+    actual_dt_history = np.array(actual_dt_history)
+    get_action_time = actual_dt_history[:, 1] - actual_dt_history[:, 0]
+    step_env_time = actual_dt_history[:, 2] - actual_dt_history[:, 1]
+    total_time = actual_dt_history[:, 2] - actual_dt_history[:, 0]
 
-#     while True:
-#         # sync joint positions
-#         teacher_joint_states = data_queue.get()
-#         # print(f"Thread {robot_side} processed:", teacher_joint_states)
-        
-#         student_left.arm.set_joint_positions(teacher_joint_states[:-1], blocking=False)
-#         student_right.arm.set_joint_positions(teacher_joint_states[:-1], blocking=False)
-#         # sync gripper positions
-#         student_gripper_target = teacher_joint_states[-1]
-#         gripper_command.cmd = student_gripper_target
-#         student_left.gripper.core.pub_single.publish(gripper_command)
-#         gripper_command.cmd = student_gripper_target
-#         student_right.gripper.core.pub_single.publish(gripper_command)
-#         # sleep DT
-#         time.sleep(DT)
+    dt_mean = np.mean(total_time)
+    freq_mean = 1 / dt_mean
+    print(f'Avg freq: {freq_mean:.2f} Get action: {np.mean(get_action_time):.3f} Step env: {np.mean(step_env_time):.3f}')
+    return freq_mean
 
 def capture_one_episode(dt, max_timesteps, camera_names, dataset_dir, dataset_name, overwrite):
-    
-    InterbotixManipulatorXS(robot_model="Student_Arm", group_name="arm", gripper_name="gripper", robot_name=f'student_left', init_node=True)
-
 
     # saving dataset
     if not os.path.isdir(dataset_dir):
@@ -80,7 +66,7 @@ def capture_one_episode(dt, max_timesteps, camera_names, dataset_dir, dataset_na
     freq_mean = print_dt_diagnosis(actual_dt_history)
     if freq_mean < 42:
         return False
-
+    
     """
     For each timestep:
     observations
@@ -152,21 +138,10 @@ if __name__=='__main__':
     overwrite = True
     max_timesteps= 1000
     dataset_name = "testing"
-    dataset_dir = "~/software/hawaii_ros_ws/testing/"
+    dataset_dir = "testing"
     camera_names= ['cam_high', 'cam_low', 'cam_left_wrist', 'cam_right_wrist']
 
     while True:
         is_healthy = capture_one_episode(DT, max_timesteps, camera_names, dataset_dir, dataset_name, overwrite)
         if is_healthy:
             break
-
-def print_dt_diagnosis(actual_dt_history):
-    actual_dt_history = np.array(actual_dt_history)
-    get_action_time = actual_dt_history[:, 1] - actual_dt_history[:, 0]
-    step_env_time = actual_dt_history[:, 2] - actual_dt_history[:, 1]
-    total_time = actual_dt_history[:, 2] - actual_dt_history[:, 0]
-
-    dt_mean = np.mean(total_time)
-    freq_mean = 1 / dt_mean
-    print(f'Avg freq: {freq_mean:.2f} Get action: {np.mean(get_action_time):.3f} Step env: {np.mean(step_env_time):.3f}')
-    return freq_mean

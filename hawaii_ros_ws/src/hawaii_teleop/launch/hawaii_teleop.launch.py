@@ -145,8 +145,9 @@ def generate_launch_description():
         Node(
             package='usb_cam',
             executable='usb_cam_node_exe',
-            name='usb_cam_1',
+            name='usb_cam_high',
             output='screen',
+            namespace='usb_cam_high',
             parameters=[
                 {'video_device': '/dev/video0'},
                 {'framerate': 60.0},

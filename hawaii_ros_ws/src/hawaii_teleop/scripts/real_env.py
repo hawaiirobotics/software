@@ -35,7 +35,7 @@ class RealEnv:
     """
 
     def __init__(self):
-        self.student_right = InterbotixManipulatorXS(robot_model="Student_Arm", group_name="arm", gripper_name="gripper", robot_name=f'student_right', init_node=False)
+        self.student_right = InterbotixManipulatorXS(robot_model="Student_Arm", group_name="arm", gripper_name="gripper", robot_name=f'student_right', init_node=True)
         self.student_left = InterbotixManipulatorXS(robot_model="Student_Arm", group_name="arm", gripper_name="gripper", robot_name=f'student_left', init_node=False)
 
         self.recorder_left = Recorder('left', init_node=False)
@@ -46,20 +46,16 @@ class RealEnv:
     def get_qpos(self):
         left_qpos_raw = self.recorder_left.qpos
         right_qpos_raw = self.recorder_right.qpos
-        left_arm_qpos = left_qpos_raw[:6]
-        right_arm_qpos = right_qpos_raw[:6]
-        left_gripper_qpos = left_qpos_raw[7] 
-        right_gripper_qpos = right_qpos_raw[7]
-        return np.concatenate([left_arm_qpos, left_gripper_qpos, right_arm_qpos, right_gripper_qpos])
+        left_arm_qpos = left_qpos_raw[:7]
+        right_arm_qpos = right_qpos_raw[:7]
+        return np.concatenate([left_arm_qpos, right_arm_qpos])
 
     def get_qvel(self):
         left_qvel_raw = self.recorder_left.qvel
         right_qvel_raw = self.recorder_right.qvel
-        left_arm_qvel = left_qvel_raw[:6]
-        right_arm_qvel = right_qvel_raw[:6]
-        left_gripper_qvel = left_qvel_raw[7]
-        right_gripper_qvel = right_qvel_raw[7]
-        return np.concatenate([left_arm_qvel, left_gripper_qvel, right_arm_qvel, right_gripper_qvel])
+        left_arm_qvel = left_qvel_raw[:7]
+        right_arm_qvel = right_qvel_raw[:7]
+        return np.concatenate([left_arm_qvel, right_arm_qvel])
 
     def get_effort(self):
         left_effort_raw = self.recorder_left.effort
@@ -113,7 +109,9 @@ class RealEnv:
             discount=None,
             observation=self.get_observation())
 
-    def step(self, right_action, left_action):
+    def step(self, action):
+        left_action = list(action[0])
+        right_action = list(action[1])
         self.student_left.arm.set_joint_positions(left_action[:6], blocking=False)
         self.student_right.arm.set_joint_positions(right_action[:6], blocking=False)
         self.set_gripper_pose(left_action[-1], right_action[-1])

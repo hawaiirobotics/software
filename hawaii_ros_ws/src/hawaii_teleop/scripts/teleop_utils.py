@@ -19,7 +19,7 @@ class ImageRecorder(Node):
         from sensor_msgs.msg import Image
         self.is_debug = is_debug
         self.bridge = CvBridge()
-        self.camera_names = ['cam_high', 'cam_low', 'cam_left_wrist', 'cam_right_wrist']
+        self.camera_names = ['cam_high']#, 'cam_low', 'cam_left_wrist', 'cam_right_wrist']
         if init_node:
             rclpy.init(args=None)
         super().__init__(node_name='image_recorder')
@@ -40,16 +40,16 @@ class ImageRecorder(Node):
             self.create_subscription(Image, f"/usb_{cam_name}/image_raw", callback_func, 10)
             if self.is_debug:
                 setattr(self, f'{cam_name}_timestamps', deque(maxlen=50))
-            while getattr(self, f'{cam_name}_image') is None and rclpy.ok():
-                rclpy.spin_once(self)
+        while getattr(self, f'cam_high_image') is None and rclpy.ok():
+            rclpy.spin_once(self)
         time.sleep(0.5)
 
     def image_cb(self, cam_name, data):
         setattr(self, f'{cam_name}_image', self.bridge.imgmsg_to_cv2(data, desired_encoding='passthrough'))
-        setattr(self, f'{cam_name}_secs', data.header.stamp.secs)
-        setattr(self, f'{cam_name}_nsecs', data.header.stamp.nsecs)
+        setattr(self, f'{cam_name}_secs', data.header.stamp.sec)
+        setattr(self, f'{cam_name}_nsecs', data.header.stamp.nanosec)
         if self.is_debug:
-            getattr(self, f'{cam_name}_timestamps').append(data.header.stamp.secs + data.header.stamp.secs * 1e-9)
+            getattr(self, f'{cam_name}_timestamps').append(data.header.stamp.sec + data.header.stamp.nanosec * 1e-9)
 
     def image_cb_cam_high(self, data):
         cam_name = 'cam_high'
@@ -99,7 +99,7 @@ class Recorder(Node):
 
         if init_node:
             rclpy.init(args=None)
-        super().__init__(node_name='image_recorder')
+        super().__init__(node_name=f'recorder{side}')
         self.create_subscription(JointState, f'/student_{side}/joint_states', self.student_state_cb, 10)
         self.create_subscription(JointGroupCommand, f'/student_{side}/commands/joint_group', self.student_arm_commands_cb, 10)
         self.create_subscription(JointSingleCommand, f'/student_{side}/commands/joint_single', self.student_gripper_commands_cb, 10)
@@ -112,7 +112,6 @@ class Recorder(Node):
         time.sleep(0.1)
 
     def student_state_cb(self, data):
-        print("DATA:", data)
         self.qpos = data.position
         self.qvel = data.velocity
         self.effort = data.effort
@@ -201,6 +200,9 @@ increment = 0.01
 increasing = True
 
 def get_joint_states():
+    global increasing
+    global value
+    global increment
     # right_states = np.zeros(7) # 6 joint + 1 gripper, for two arms
     # left_states = np.zeros(7) # 6 joint + 1 gripper, for two arms
     # Arm actions
