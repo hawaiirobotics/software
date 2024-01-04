@@ -219,4 +219,4 @@ def get_joint_states():
     right_states = [value]*7
     left_states = [value]*7
 
-    return right_states, left_states
+    return np.concatenate((right_states, left_states))

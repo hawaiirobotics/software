@@ -2,7 +2,9 @@ import time
 import os
 import h5py
 import numpy as np
+import rclpy
 from tqdm import tqdm
+import cv2
 from interbotix_xs_modules.xs_robot.arm import InterbotixManipulatorXS
 
 from real_env import make_real_env
@@ -30,7 +32,7 @@ def print_dt_diagnosis(actual_dt_history):
     print(f'Avg freq: {freq_mean:.2f} Get action: {np.mean(get_action_time):.3f} Step env: {np.mean(step_env_time):.3f}')
     return freq_mean
 
-def capture_one_episode(dt, max_timesteps, camera_names, dataset_dir, dataset_name, overwrite):
+def capture_one_episode(dt, max_timesteps, camera_names, dataset_dir, dataset_name, overwrite, using_sim):
 
     # saving dataset
     if not os.path.isdir(dataset_dir):
@@ -64,7 +66,8 @@ def capture_one_episode(dt, max_timesteps, camera_names, dataset_dir, dataset_na
     move_grippers([env.student_left, env.student_right], [STUDENT_GRIPPER_JOINT_OPEN] * 2, move_time=0.5)
 
     freq_mean = print_dt_diagnosis(actual_dt_history)
-    if freq_mean < 42:
+    if freq_mean < 42 and not using_sim:
+        print("Sampling frequency is too low. Should be >= 42")
         return False
     
     """
@@ -99,6 +102,15 @@ def capture_one_episode(dt, max_timesteps, camera_names, dataset_dir, dataset_na
         data_dict['/action'].append(action)
         for cam_name in camera_names:
             data_dict[f'/observations/images/{cam_name}'].append(ts.observation['images'][cam_name])
+    # yuv_image_data = data_dict[f'/observations/images/cam_high'][0]
+
+    # Convert YUV422 to BGR using OpenCV
+    # using to verify camera is capturing images
+    # yuv_image = np.array(yuv_image_data)
+    # bgr_image = cv2.cvtColor(yuv_image, cv2.COLOR_YUV2BGR_YUYV)
+    # cv2.imshow('Image', bgr_image)
+    # cv2.waitKey(0) # Keep the window open until any key is pressed
+    # cv2.destroyAllWindows()
 
     # HDF5
     t0 = time.time()
@@ -107,11 +119,15 @@ def capture_one_episode(dt, max_timesteps, camera_names, dataset_dir, dataset_na
         obs = root.create_group('observations')
         image = obs.create_group('images')
         for cam_name in camera_names:
-            _ = image.create_dataset(cam_name, (max_timesteps, 480, 640, 3), dtype='uint8',
-                                     chunks=(1, 480, 640, 3), )
+            _ = image.create_dataset(cam_name, (max_timesteps, 480, 640, 2), dtype='uint8', #have 2 channels because of YUV422 encoding
+                                     chunks=(1, 480, 640, 2), )
         _ = obs.create_dataset('qpos', (max_timesteps, 14))
-        _ = obs.create_dataset('qvel', (max_timesteps, 14))
-        _ = obs.create_dataset('effort', (max_timesteps, 14))
+        if using_sim :
+            _ = obs.create_dataset('qvel', (max_timesteps, 0))
+            _ = obs.create_dataset('effort', (max_timesteps, 0))
+        else :
+            _ = obs.create_dataset('qvel', (max_timesteps, 14))
+            _ = obs.create_dataset('effort', (max_timesteps, 14))
         _ = root.create_dataset('action', (max_timesteps, 14))
 
         for name, array in data_dict.items():
@@ -122,26 +138,16 @@ def capture_one_episode(dt, max_timesteps, camera_names, dataset_dir, dataset_na
 
 
 if __name__=='__main__':
-    # Shared queue for passing data between threads
-    # shared_data_queue = queue.Queue()
 
-    # # Create threads for reading and processing in Thread 1 and Thread 2
-    # write_thread = threading.Thread(target=mock_serial_data, args=(shared_data_queue,))
-    # process_thread_1 = threading.Thread(target=teleop, args=(shared_data_queue, True))
-
-    # # Start all threads
-    # write_thread.start()
-    # process_thread_1.start()
-
-    # write_thread.join()
-    # process_thread_1.join()
     overwrite = True
-    max_timesteps= 1000
+    max_timesteps= 100
     dataset_name = "testing"
     dataset_dir = "testing"
-    camera_names= ['cam_high', 'cam_low', 'cam_left_wrist', 'cam_right_wrist']
+    camera_names= ['cam_high']#, 'cam_low', 'cam_left_wrist', 'cam_right_wrist']
+    using_sim = True
 
     while True:
-        is_healthy = capture_one_episode(DT, max_timesteps, camera_names, dataset_dir, dataset_name, overwrite)
+        is_healthy = capture_one_episode(DT, max_timesteps, camera_names, dataset_dir, dataset_name, overwrite, using_sim)
         if is_healthy:
             break
+    rclpy.shutdown()

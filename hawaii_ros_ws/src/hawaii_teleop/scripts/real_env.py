@@ -110,8 +110,8 @@ class RealEnv:
             observation=self.get_observation())
 
     def step(self, action):
-        left_action = list(action[0])
-        right_action = list(action[1])
+        left_action = list(action[7:])
+        right_action = list(action[:7])
         self.student_left.arm.set_joint_positions(left_action[:6], blocking=False)
         self.student_right.arm.set_joint_positions(right_action[:6], blocking=False)
         self.set_gripper_pose(left_action[-1], right_action[-1])
