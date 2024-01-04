@@ -4,9 +4,6 @@ import rclpy
 from rclpy.node import Node
 from interbotix_xs_msgs.msg import JointSingleCommand
 
-import IPython
-e = IPython.embed
-
 DT = 0.033
 STUDENT_GRIPPER_JOINT_OPEN = 0
 STUDENT_GRIPPER_JOINT_CLOSE = 0.057
@@ -169,31 +166,18 @@ def move_grippers(bot_list, target_pose_list, move_time):
         time.sleep(DT)
 
 def setup_student_bot(bot):
-    bot.dxl.robot_reboot_motors("single", "gripper", True)
-    bot.dxl.robot_set_operating_modes("group", "arm", "position")
-    bot.dxl.robot_set_operating_modes("single", "gripper", "current_based_position")
+    bot.core.robot_reboot_motors("single", "gripper", True)
+    bot.core.robot_set_operating_modes("group", "arm", "position", profile_type="time")
+    bot.core.robot_set_operating_modes("single", "gripper", "pwm", profile_type="time")
     torque_on(bot)
 
-def setup_master_bot(bot):
-    bot.dxl.robot_set_operating_modes("group", "arm", "pwm")
-    bot.dxl.robot_set_operating_modes("single", "gripper", "current_based_position")
-    torque_off(bot)
-
-def set_standard_pid_gains(bot):
-    bot.dxl.robot_set_motor_registers("group", "arm", 'Position_P_Gain', 800)
-    bot.dxl.robot_set_motor_registers("group", "arm", 'Position_I_Gain', 0)
-
-def set_low_pid_gains(bot):
-    bot.dxl.robot_set_motor_registers("group", "arm", 'Position_P_Gain', 100)
-    bot.dxl.robot_set_motor_registers("group", "arm", 'Position_I_Gain', 0)
-
 def torque_off(bot):
-    bot.dxl.robot_torque_enable("group", "arm", False)
-    bot.dxl.robot_torque_enable("single", "gripper", False)
+    bot.core.robot_torque_enable("group", "arm", False)
+    bot.core.robot_torque_enable("single", "gripper", False)
 
 def torque_on(bot):
-    bot.dxl.robot_torque_enable("group", "arm", True)
-    bot.dxl.robot_torque_enable("single", "gripper", True)
+    bot.core.robot_torque_enable("group", "arm", True)
+    bot.core.robot_torque_enable("single", "gripper", True)
 
 value = 0
 increment = 0.01

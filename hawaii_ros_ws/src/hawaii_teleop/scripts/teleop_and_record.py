@@ -5,13 +5,10 @@ import numpy as np
 import rclpy
 from tqdm import tqdm
 import cv2
-from interbotix_xs_modules.xs_robot.arm import InterbotixManipulatorXS
 
 from real_env import make_real_env
-from teleop_utils import get_joint_states, move_grippers, DT, STUDENT_GRIPPER_JOINT_OPEN, STUDENT_GRIPPER_JOINT_CLOSE
-
-import IPython
-e = IPython.embed
+from teleop_utils import get_joint_states, move_grippers, move_arms, setup_student_bot
+from teleop_utils import DT, STUDENT_GRIPPER_JOINT_OPEN, STUDENT_GRIPPER_JOINT_CLOSE
 
 # Function to continuously read data from the serial port
 # def read_from_serial(serial_port, data_queue):
@@ -20,6 +17,34 @@ e = IPython.embed
 #         if serial_port.in_waiting > 0:
 #             data = serial_port.readline().decode().strip()
 #             data_queue.put(data)  # Put the data into the shared queue
+
+def setup_student_arms(student_left, student_right):
+    # reboot gripper motors, and set operating modes for all motors
+    setup_student_bot(student_left)
+    setup_student_bot(student_right)
+    # student_left.core.robot_set_motor_registers("single", "gripper", 'current_limit', 1000) 
+    # student_right.core.robot_set_motor_registers("single", "gripper", 'current_limit', 1000)
+
+    # move student arms to teacher arm position
+    start_arm_qpos = get_joint_states()
+    move_arms([student_left, student_right], [start_arm_qpos[:6],start_arm_qpos[7:-1]] , move_time=1.5)
+    # move grippers to starting position
+    move_grippers([student_left, student_right], [STUDENT_GRIPPER_JOINT_CLOSE] * 2, move_time=0.5)
+
+    # press gripper to start data collection
+    print(f'Close the teacher gripper to start')
+    close_thresh = STUDENT_GRIPPER_JOINT_CLOSE - 0.001
+    closed = False
+    while not closed:
+        joint_pos = get_joint_states()
+        left_pos = list(joint_pos[:7])
+        right_pos = list(joint_pos[7:])
+        gripper_pos_left = left_pos[-1]
+        gripper_pos_right = right_pos[-1]
+        if (gripper_pos_left > close_thresh) and (gripper_pos_right > close_thresh):
+            closed = True
+        time.sleep(DT/10)
+    print(f'Teleop starting!')
 
 def print_dt_diagnosis(actual_dt_history):
     actual_dt_history = np.array(actual_dt_history)
@@ -32,7 +57,7 @@ def print_dt_diagnosis(actual_dt_history):
     print(f'Avg freq: {freq_mean:.2f} Get action: {np.mean(get_action_time):.3f} Step env: {np.mean(step_env_time):.3f}')
     return freq_mean
 
-def capture_one_episode(dt, max_timesteps, camera_names, dataset_dir, dataset_name, overwrite, using_sim):
+def capture_one_episode(max_timesteps, camera_names, dataset_dir, dataset_name, overwrite, using_sim):
 
     # saving dataset
     if not os.path.isdir(dataset_dir):
@@ -44,8 +69,8 @@ def capture_one_episode(dt, max_timesteps, camera_names, dataset_dir, dataset_na
 
     env = make_real_env()
 
-    # move all 4 robots to a starting pose where it is easy to start teleoperation, then wait till both gripper closed
-    #opening_ceremony(master_bot_left, master_bot_right, env.puppet_bot_left, env.puppet_bot_right)  
+    # setup student arms and move them to where teacher arms are
+    setup_student_arms(env.student_left, env.student_right)  
 
     # Data collection
     ts = env.reset(fake=True)
@@ -62,9 +87,8 @@ def capture_one_episode(dt, max_timesteps, camera_names, dataset_dir, dataset_na
         actions.append(action)
         actual_dt_history.append([t0, t1, t2])
 
-    # Open puppet grippers
+    # Open student grippers
     move_grippers([env.student_left, env.student_right], [STUDENT_GRIPPER_JOINT_OPEN] * 2, move_time=0.5)
-
     freq_mean = print_dt_diagnosis(actual_dt_history)
     if freq_mean < 42 and not using_sim:
         print("Sampling frequency is too low. Should be >= 42")
@@ -80,8 +104,8 @@ def capture_one_episode(dt, max_timesteps, camera_names, dataset_dir, dataset_na
         - cam_right_wrist   (480, 640, 3) 'uint8'
     - qpos                  (14,)         'float64'
     - qvel                  (14,)         'float64'
-    
-    action                  (14,)         'float64'
+    - effort                (14,)         'float64'
+    - action                (14,)         'float64'
     """
 
     data_dict = {
@@ -102,8 +126,8 @@ def capture_one_episode(dt, max_timesteps, camera_names, dataset_dir, dataset_na
         data_dict['/action'].append(action)
         for cam_name in camera_names:
             data_dict[f'/observations/images/{cam_name}'].append(ts.observation['images'][cam_name])
+   
     # yuv_image_data = data_dict[f'/observations/images/cam_high'][0]
-
     # Convert YUV422 to BGR using OpenCV
     # using to verify camera is capturing images
     # yuv_image = np.array(yuv_image_data)
@@ -147,7 +171,7 @@ if __name__=='__main__':
     using_sim = True
 
     while True:
-        is_healthy = capture_one_episode(DT, max_timesteps, camera_names, dataset_dir, dataset_name, overwrite, using_sim)
+        is_healthy = capture_one_episode(max_timesteps, camera_names, dataset_dir, dataset_name, overwrite, using_sim)
         if is_healthy:
             break
     rclpy.shutdown()

@@ -7,4 +7,4 @@ scipy>=1.2.0
 h5py
 tqdm
 dm_env
-IPython
+opencv-python

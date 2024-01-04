@@ -184,7 +184,7 @@ class InterbotixGripperXSInterface:
         self.left_finger_upper_limit = self.gripper_info.joint_upper_limits[0]
 
         if self.gripper_info.mode not in ('current', 'pwm'):
-            self.core.get_logger().err(
+            self.core.get_logger().error(
                 "Please set the gripper's 'operating mode' to 'pwm' or 'current'."
             )
             sys.exit(1)

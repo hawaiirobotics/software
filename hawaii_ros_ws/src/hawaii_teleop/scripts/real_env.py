@@ -9,9 +9,6 @@ from teleop_utils import move_arms, move_grippers, DT, STUDENT_GRIPPER_JOINT_OPE
 from interbotix_xs_modules.xs_robot.arm import InterbotixManipulatorXS
 from interbotix_xs_msgs.msg import JointSingleCommand
 
-import IPython
-e = IPython.embed
-
 class RealEnv:
     """
     Environment for real robot bi-manual manipulation
@@ -98,9 +95,9 @@ class RealEnv:
 
     def reset(self, fake=False):
         if not fake:
-            # Reboot puppet robot gripper motors
-            self.student_left.dxl.robot_reboot_motors("single", "gripper", True)
-            self.student_right.dxl.robot_reboot_motors("single", "gripper", True)
+            # Reboot student robot gripper motors
+            self.student_left.core.robot_reboot_motors("single", "gripper", True)
+            self.student_right.core.robot_reboot_motors("single", "gripper", True)
             self._reset_joints()
             self._reset_gripper()
         return dm_env.TimeStep(
