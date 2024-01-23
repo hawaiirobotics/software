@@ -183,9 +183,9 @@ class InterbotixGripperXSInterface:
         self.left_finger_lower_limit = self.gripper_info.joint_lower_limits[0]
         self.left_finger_upper_limit = self.gripper_info.joint_upper_limits[0]
 
-        if self.gripper_info.mode not in ('current', 'pwm'):
+        if self.gripper_info.mode not in ('current', 'pwm', 'linear_position', 'position'):
             self.core.get_logger().error(
-                "Please set the gripper's 'operating mode' to 'pwm' or 'current'."
+                "Please set the gripper's 'operating mode' to 'pwm' or 'current' or 'linear_position' or 'position."
             )
             sys.exit(1)
 
@@ -264,3 +264,6 @@ class InterbotixGripperXSInterface:
         :param delay: (optional) number of seconds to delay before returning control to the user
         """
         self.gripper_controller(self.gripper_value, delay)
+
+    def set_gripper_position(self, value):
+        self.gripper_controller(value, delay=0.0)

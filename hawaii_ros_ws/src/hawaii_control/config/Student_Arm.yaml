@@ -1,4 +1,4 @@
-port: /dev/ttyDXL
+port: /dev/ttyUSB0
 
 joint_order: [Joint1, Joint2, Joint3, Joint4, Joint5, Joint6, gripper]
 sleep_positions: [0, 0, 0, 0, 0, 0, 0]
@@ -19,8 +19,8 @@ grippers:
     right_finger: GR
 
 shadows:
-  Joint1:
-    shadow_list: [Joint1_shadow]
+  Joint2:
+    shadow_list: [Joint2_shadow]
     calibrate: true
 
 sisters:
@@ -36,7 +36,7 @@ motors:
     Max_Position_Limit: 4095
     Secondary_ID: 255
     
-  Joint1_shadow:
+  Joint2:
     ID: 2
     Baud_Rate: 3
     Return_Delay_Time: 0
@@ -46,7 +46,7 @@ motors:
     Max_Position_Limit: 4095
     Secondary_ID: 1
 
-  Joint2:
+  Joint2_shadow:
     ID: 3
     Baud_Rate: 3
     Return_Delay_Time: 0
