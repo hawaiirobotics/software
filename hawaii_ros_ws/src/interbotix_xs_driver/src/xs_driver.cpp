@@ -764,12 +764,10 @@ float InterbotixDriverXS::convert_angular_position_to_linear(
   const std::string & name,
   const float & angular_position)
 {
-  float arm_length = gripper_map[name].arm_length;
-  float horn_radius = gripper_map[name].horn_radius;
-  float a1 = horn_radius * sin(angular_position);
-  float c = sqrt(pow(horn_radius, 2) - pow(a1, 2));
-  float a2 = sqrt(pow(arm_length, 2) - pow(c, 2));
-  return a1 + a2;
+  float start_angle = 3.14159/2; // 270 - 180 = 90 degrees
+  float m_per_rad = 0.01; // 10mm / rad
+  float upper_pos_limit = 0.057;
+  return upper_pos_limit - (start_angle-angular_position)*m_per_rad;
 }
 
 bool InterbotixDriverXS::retrieve_motor_configs(
