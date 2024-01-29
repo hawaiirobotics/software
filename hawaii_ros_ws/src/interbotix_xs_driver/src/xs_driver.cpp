@@ -748,23 +748,17 @@ float InterbotixDriverXS::convert_linear_position_to_radian(
   const std::string & name,
   const float & linear_position)
 {
-  float half_dist = linear_position / 2.0;
-  float arm_length = gripper_map[name].arm_length;
-  float horn_radius = gripper_map[name].horn_radius;
-
-  // (pi / 2) - acos(horn_rad^2 + (pos / 2)^2 - arm_length^2) / (2 * horn_rad * (pos / 2))
-  return 3.14159 / 2.0 - \
-         acos(
-    (pow(horn_radius, 2) + \
-    pow(half_dist, 2) - \
-    pow(arm_length, 2)) / (2 * horn_radius * half_dist));
+    float start_angle = 2*3.14159/2; // 360 - 180 = 180 degrees
+    float m_per_rad = 0.01; // 10mm / rad
+    float upper_pos_limit = 0.057;
+    return start_angle - (linear_position - upper_pos_limit)/m_per_rad ;
 }
 
 float InterbotixDriverXS::convert_angular_position_to_linear(
   const std::string & name,
   const float & angular_position)
 {
-  float start_angle = 3.14159/2; // 270 - 180 = 90 degrees
+  float start_angle = 2*3.14159/2; // 360 - 180 = 180 degrees
   float m_per_rad = 0.01; // 10mm / rad
   float upper_pos_limit = 0.057;
   return upper_pos_limit - (start_angle-angular_position)*m_per_rad;

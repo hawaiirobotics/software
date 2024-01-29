@@ -1,4 +1,4 @@
-port: /dev/ttyUSB0
+port: /dev/ttyUSB1
 
 joint_order: [Joint1, Joint2, Joint3, Joint4, Joint5, Joint6, gripper]
 sleep_positions: [0, 0, 0, 0, 0, 0, 0]
@@ -102,6 +102,6 @@ motors:
     Return_Delay_Time: 0
     Drive_Mode: 4 
     Velocity_Limit: 131
-    Min_Position_Limit: 0
+    Min_Position_Limit: 410
     Max_Position_Limit: 4095
     Secondary_ID: 255

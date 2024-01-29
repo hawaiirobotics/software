@@ -173,9 +173,9 @@ class InterbotixGripperXSInterface:
             * (gripper_pressure_upper_limit - gripper_pressure_lower_limit)
         )
 
-        self.tmr_gripper_state = self.core.create_timer(
-            timer_period_sec=0.02, callback=self.gripper_state
-        )
+        # self.tmr_gripper_state = self.core.create_timer(
+        #     timer_period_sec=0.02, callback=self.gripper_state
+        # )
 
         while rclpy.ok() and not self.future_gripper_info.done():
             rclpy.spin_until_future_complete(self.core, self.future_gripper_info)
@@ -216,7 +216,6 @@ class InterbotixGripperXSInterface:
                 self.gripper_command.cmd < 0
                 and gripper_pos <= self.left_finger_lower_limit
             ):
-                
                 self.gripper_command.cmd = float(0.0)
                 self.core.pub_single.publish(self.gripper_command)
                 self.gripper_moving = False
@@ -234,11 +233,11 @@ class InterbotixGripperXSInterface:
             gripper_pos = self.core.joint_states.position[self.left_finger_index]
         # check if the gripper is within its limits
         if (
-            self.gripper_command.cmd > -4.122 and gripper_pos < self.left_finger_upper_limit
+            self.gripper_command.cmd >= -2.5132 and gripper_pos < self.left_finger_upper_limit
         ) or (
-            self.gripper_command.cmd > -4.122 and gripper_pos > self.left_finger_lower_limit
+            self.gripper_command.cmd >= -2.5132 and gripper_pos > self.left_finger_lower_limit
         ):
-            
+            print
             self.set_trajectory_time(2, 0.3)
             self.core.pub_single.publish(self.gripper_command)
             self.gripper_moving = True
