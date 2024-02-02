@@ -164,8 +164,8 @@ class InterbotixGripperXSInterface:
         self.gripper_pressure_lower_limit = gripper_pressure_lower_limit
         self.gripper_pressure_upper_limit = gripper_pressure_upper_limit
 
-        self.moving_time = 2.0
-        self.accel_time = 0.3
+        self.moving_time = 0.0
+        self.accel_time = 0.0
 
         # value = lower + pressure * range
         self.gripper_value = gripper_pressure_lower_limit + (
@@ -233,15 +233,15 @@ class InterbotixGripperXSInterface:
             gripper_pos = self.core.joint_states.position[self.left_finger_index]
         # check if the gripper is within its limits
         if (
-            self.gripper_command.cmd >= -2.5132 and gripper_pos < self.left_finger_upper_limit
+            self.gripper_command.cmd >= -2.2864 and gripper_pos < self.left_finger_upper_limit
         ) or (
-            self.gripper_command.cmd >= -2.5132 and gripper_pos > self.left_finger_lower_limit
+            self.gripper_command.cmd >= -2.2864 and gripper_pos > self.left_finger_lower_limit
         ):
-            print
-            self.set_trajectory_time(2, 0.3)
+
+            # self.set_trajectory_time(self.moving_time, self.accel_time)
             self.core.pub_single.publish(self.gripper_command)
             self.gripper_moving = True
-            time.sleep(delay)
+            # time.sleep(delay)
 
     def set_pressure(self, pressure: float) -> None:
         """

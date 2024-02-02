@@ -751,7 +751,7 @@ float InterbotixDriverXS::convert_linear_position_to_radian(
     float start_angle = 2*3.14159/2; // 360 - 180 = 180 degrees
     float m_per_rad = 0.01; // 10mm / rad
     float upper_pos_limit = 0.057;
-    return start_angle - (linear_position - upper_pos_limit)/m_per_rad ;
+    return start_angle - (linear_position - upper_pos_limit)/m_per_rad;
 }
 
 float InterbotixDriverXS::convert_angular_position_to_linear(

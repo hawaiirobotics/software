@@ -5,8 +5,8 @@ from rclpy.node import Node
 from interbotix_xs_msgs.msg import JointSingleCommand
 
 DT = 0.033
-STUDENT_GRIPPER_JOINT_OPEN = 0
-STUDENT_GRIPPER_JOINT_CLOSE = 0.057
+STUDENT_GRIPPER_JOINT_OPEN = 3.141592
+STUDENT_GRIPPER_JOINT_CLOSE = -2.4
 START_ARM_POSE = [0,0,0,0,0,0,0]
 
 class ImageRecorder(Node):
@@ -168,7 +168,7 @@ def move_grippers(bot_list, target_pose_list, move_time):
 def setup_student_bot(bot):
     bot.core.robot_reboot_motors("single", "gripper", True)
     bot.core.robot_set_operating_modes("group", "arm", "position", profile_type="time")
-    bot.core.robot_set_operating_modes("single", "gripper", "pwm", profile_type="time")
+    bot.core.robot_set_operating_modes("single", "gripper", "position", profile_type="time")
     torque_on(bot)
 
 def torque_off(bot):
@@ -178,29 +178,3 @@ def torque_off(bot):
 def torque_on(bot):
     bot.core.robot_torque_enable("group", "arm", True)
     bot.core.robot_torque_enable("single", "gripper", True)
-
-value = 0
-increment = 0.01
-increasing = True
-
-def get_joint_states():
-    global increasing
-    global value
-    global increment
-    # right_states = np.zeros(7) # 6 joint + 1 gripper, for two arms
-    # left_states = np.zeros(7) # 6 joint + 1 gripper, for two arms
-    # Arm actions
-    # will come from serial, and will need to apply offset to convert encoder values to robot values
-    if increasing:
-        value += increment
-    else:
-        value -= increment
-    if value >= 0.5:  
-        increasing = False
-    elif value <=0:
-        increasing = True
-
-    right_states = [value]*7
-    left_states = [value]*7
-
-    return np.concatenate((right_states, left_states))

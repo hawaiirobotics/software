@@ -9,8 +9,8 @@ def main():
 
     # bot.gripper.set_gripper_position(-3.5)
     # bot.gripper.set_gripper_position(-4.0)
-    bot.gripper.set_gripper_position(-2.5)
-    # bot.gripper.set_gripper_position(3.141592)
+    bot.gripper.set_gripper_position(-2.0)
+    bot.gripper.set_gripper_position(3.141592)
     # bot.gripper.set_gripper_position(4.54)
    
     bot.shutdown()
