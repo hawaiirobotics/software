@@ -42,8 +42,8 @@ motors:
     Return_Delay_Time: 0
     Drive_Mode: 0
     Velocity_Limit: 131
-    Min_Position_Limit: 0
-    Max_Position_Limit: 4095
+    Min_Position_Limit: 1024
+    Max_Position_Limit: 3072
     Secondary_ID: 1
 
   Joint2_shadow:
@@ -52,8 +52,8 @@ motors:
     Return_Delay_Time: 0
     Drive_Mode: 1
     Velocity_Limit: 131
-    Min_Position_Limit: 841
-    Max_Position_Limit: 2867
+    Min_Position_Limit: 1024
+    Max_Position_Limit: 3072
     Secondary_ID: 255
 
   Joint3:
@@ -62,8 +62,8 @@ motors:
     Return_Delay_Time: 0
     Drive_Mode: 1
     Velocity_Limit: 131
-    Min_Position_Limit: 898
-    Max_Position_Limit: 3094
+    Min_Position_Limit: 2048
+    Max_Position_Limit: 4095
     Secondary_ID: 255
 
   Joint4:
@@ -72,8 +72,8 @@ motors:
     Return_Delay_Time: 0
     Drive_Mode: 1
     Velocity_Limit: 131
-    Min_Position_Limit: 830
-    Max_Position_Limit: 3504
+    Min_Position_Limit: 0
+    Max_Position_Limit: 4095
     Secondary_ID: 255
 
   Joint5:
@@ -82,7 +82,7 @@ motors:
     Return_Delay_Time: 0
     Drive_Mode: 0
     Velocity_Limit: 131
-    Min_Position_Limit: 0
+    Min_Position_Limit: 2048
     Max_Position_Limit: 4095
     Secondary_ID: 255
     
