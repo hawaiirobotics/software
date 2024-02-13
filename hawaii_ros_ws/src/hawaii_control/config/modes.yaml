@@ -5,8 +5,11 @@ groups:
     profile_velocity: 2000
     profile_acceleration: 300
     torque_enable: true
-
+    
 singles:
   gripper:
-    operating_mode: pwm
+    operating_mode: position
+    profile_type: velocity
+    profile_velocity: 0
+    profile_acceleration: 0
     torque_enable: true

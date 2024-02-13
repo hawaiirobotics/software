@@ -291,14 +291,24 @@ class InterbotixRobotXSCore(Node):
         :param reg: desired register name
         :return: list of register values
         """
-        future_get_reg = self.srv_get_reg.call_async(
-            RegisterValues.Request(cmd_type=cmd_type, name=name, reg=reg)
-        )
-        self.executor.spin_once_until_future_complete(
-            future=future_get_reg,
-            timeout_sec=0.1
-        )
-        return future_get_reg.result().values
+        request = RegisterValues.Request(cmd_type=cmd_type, name=name, reg=reg)
+        future_get_reg = self.srv_get_reg.call_async(request)
+        rclpy.spin_until_future_complete(self, future_get_reg, timeout_sec=1.0)
+
+        if future_get_reg.done():
+            try:
+                response = future_get_reg.result()
+                if response is not None:
+                    return response.values
+                else:
+                    print("Received no response from the service call.")
+                    return []
+            except Exception as e:
+                print(f"Service call failed with the following error: {e}")
+                return []
+        else:
+            print("Service call did not complete within the specified timeout.")
+            return []
 
     def robot_get_robot_info(self, cmd_type: str, name: str) -> RobotInfo.Response:
         """

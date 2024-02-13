@@ -5,45 +5,116 @@ import numpy as np
 import rclpy
 from tqdm import tqdm
 import cv2
+import serial
+import threading
+import queue
 
 from real_env import make_real_env
-from teleop_utils import get_joint_states, move_grippers, move_arms, setup_student_bot
+from teleop_utils import move_grippers, move_arms, setup_student_bot, get_arm_gripper_positions
 from teleop_utils import DT, STUDENT_GRIPPER_JOINT_OPEN, STUDENT_GRIPPER_JOINT_CLOSE
 
-# Function to continuously read data from the serial port
-# def read_from_serial(serial_port, data_queue):
-#     # will need to do more once the payload structure is finalized
-#     while True:
-#         if serial_port.in_waiting > 0:
-#             data = serial_port.readline().decode().strip()
-#             data_queue.put(data)  # Put the data into the shared queue
+# Create a shared queue
+# the queue can grow infinitely if max_size isn't set. May need to do that eventually
+data_queue = queue.Queue()
+setup_done = False
 
-def setup_student_arms(student_left, student_right):
+
+value = 0
+increment = 0.01
+increasing = True
+
+# Function to continuously read data from the serial port
+def read_from_serial(serial_port, data_queue):
+    # will need to do more once the payload structure is finalized
+    print("starting thread")
+    try:
+        serial_port.flush()
+        serial_port.readline()
+    except serial.SerialException as e:
+        print("Error writing to serial:", e)
+        serial_port.close()
+        exit(1)
+    first_frame = True
+    try:
+        while True:
+            if serial_port.in_waiting > 0:
+                line = serial_port.readline().decode('utf-8').strip()
+                if first_frame or setup_done:
+                    first_frame = False
+                    float_data = [float(element) for element in line.split(',')]
+                    right_states = np.array(float_data[:7])
+                    left_states = np.array(float_data[7:])
+                    data_queue.put(np.concatenate((right_states, left_states)))
+    except (KeyboardInterrupt, serial.SerialException):
+        print("\nKeyboard interrupt received, closing serial port.")
+        serial_port.close()
+    # while True:
+        
+    #         # Read a line from the serial port
+    #         line = serial_port.readline().decode('utf-8').strip()
+
+    #         # Process the received message
+    #         if line:
+    #             print("Received:", line)
+    #             data_queue.put(line)
+    #     except serial.SerialException as e:
+    #         print("Error reading serial:", e)
+    #         exit(1)
+
+def get_joint_states():
+    # global increasing
+    # global value
+    # global increment
+    # # right_states = np.zeros(7) # 6 joint + 1 gripper, for two arms
+    # # left_states = np.zeros(7) # 6 joint + 1 gripper, for two arms
+    # # Arm actions
+    # # will come from serial, and will need to apply offset to convert encoder values to robot values
+    # if increasing:
+    #     value += increment
+    # else:
+    #     value -= increment
+    # if value >= 3.1:  
+    #     increasing = False
+    # elif value <=0:
+    #     increasing = True
+
+    # right_states = [0,0,0,0,0,0,value]
+    # left_states = [value]*7
+
+    return data_queue.get()
+
+def setup_student_arms(student_right):
     # reboot gripper motors, and set operating modes for all motors
-    setup_student_bot(student_left)
+    # setup_student_bot(student_left)
     setup_student_bot(student_right)
     # student_left.core.robot_set_motor_registers("single", "gripper", 'current_limit', 1000) 
     # student_right.core.robot_set_motor_registers("single", "gripper", 'current_limit', 1000)
 
     # move student arms to teacher arm position
     start_arm_qpos = get_joint_states()
-    move_arms([student_left, student_right], [start_arm_qpos[:6],start_arm_qpos[7:-1]] , move_time=1.5)
+    print(start_arm_qpos)
+    # move_arms([student_left, student_right], [start_arm_qpos[:6],start_arm_qpos[7:-1]] , move_time=1.5)
+    move_arms([student_right], [start_arm_qpos[7:-1]] , move_time=10)
+    print("done moving to zero")
     # move grippers to starting position
-    move_grippers([student_left, student_right], [STUDENT_GRIPPER_JOINT_CLOSE] * 2, move_time=0.5)
+    # move_grippers([student_left, student_right], [STUDENT_GRIPPER_JOINT_OPEN] * 2, move_time=0.5)
+    move_grippers([student_right], [STUDENT_GRIPPER_JOINT_OPEN] , move_time=1.5)
+    print("done moving gripper to home")
+
 
     # press gripper to start data collection
-    print(f'Close the teacher gripper to start')
-    close_thresh = STUDENT_GRIPPER_JOINT_CLOSE - 0.001
-    closed = False
-    while not closed:
-        joint_pos = get_joint_states()
-        left_pos = list(joint_pos[:7])
-        right_pos = list(joint_pos[7:])
-        gripper_pos_left = left_pos[-1]
-        gripper_pos_right = right_pos[-1]
-        if (gripper_pos_left > close_thresh) and (gripper_pos_right > close_thresh):
-            closed = True
-        time.sleep(DT/10)
+    # print(f'Close the teacher gripper to start')
+    # close_thresh = STUDENT_GRIPPER_JOINT_CLOSE - 0.001
+    # closed = False
+    # while not closed:
+    #     joint_pos = get_joint_states()
+    #     left_pos = list(joint_pos[:7])
+    #     right_pos = list(joint_pos[7:])
+    #     gripper_pos_left = left_pos[-1]
+    #     gripper_pos_right = right_pos[-1]
+    #     if (gripper_pos_left > close_thresh) and (gripper_pos_right > close_thresh):
+    #         closed = True
+    #     time.sleep(DT/10)
     print(f'Teleop starting!')
 
 def print_dt_diagnosis(actual_dt_history):
@@ -57,7 +128,7 @@ def print_dt_diagnosis(actual_dt_history):
     print(f'Avg freq: {freq_mean:.2f} Get action: {np.mean(get_action_time):.3f} Step env: {np.mean(step_env_time):.3f}')
     return freq_mean
 
-def capture_one_episode(max_timesteps, camera_names, dataset_dir, dataset_name, overwrite, using_sim):
+def capture_one_episode(max_timesteps, camera_names, dataset_dir, dataset_name, overwrite, using_sim, ser):
 
     # saving dataset
     if not os.path.isdir(dataset_dir):
@@ -70,16 +141,25 @@ def capture_one_episode(max_timesteps, camera_names, dataset_dir, dataset_name, 
     env = make_real_env()
 
     # setup student arms and move them to where teacher arms are
-    setup_student_arms(env.student_left, env.student_right)  
+    setup_student_arms(env.student_right)
+    global setup_done
+    setup_done = True
+
+    print("done setup")
 
     # Data collection
     ts = env.reset(fake=True)
     timesteps = [ts]
     actions = []
     actual_dt_history = []
-    for t in tqdm(range(max_timesteps)):
+    # for t in tqdm(range(max_timesteps)):
+    for t in range(max_timesteps):
+        if t %100 == 0:
+            print(data_queue.qsize())
         t0 = time.time() #
         action = get_joint_states()
+        # print("Gripper position command:", action[6])
+        # print("Current Gripper Position:", get_arm_gripper_positions(env.student_right))
         t1 = time.time() #
         ts = env.step(action)
         t2 = time.time() #
@@ -88,7 +168,10 @@ def capture_one_episode(max_timesteps, camera_names, dataset_dir, dataset_name, 
         actual_dt_history.append([t0, t1, t2])
 
     # Open student grippers
-    move_grippers([env.student_left, env.student_right], [STUDENT_GRIPPER_JOINT_OPEN] * 2, move_time=0.5)
+    # move_grippers([env.student_left, env.student_right], [STUDENT_GRIPPER_JOINT_OPEN] * 2, move_time=0.5)
+    move_grippers([env.student_right], [STUDENT_GRIPPER_JOINT_OPEN], move_time=1.5)
+    print("DONE")
+        
     freq_mean = print_dt_diagnosis(actual_dt_history)
     if freq_mean < 42 and not using_sim:
         print("Sampling frequency is too low. Should be >= 42")
@@ -163,15 +246,33 @@ def capture_one_episode(max_timesteps, camera_names, dataset_dir, dataset_name, 
 
 if __name__=='__main__':
 
+    os.nice(1)
+
     overwrite = True
-    max_timesteps= 100
+    max_timesteps= 1000
     dataset_name = "testing"
     dataset_dir = "testing"
     camera_names= ['cam_high']#, 'cam_low', 'cam_left_wrist', 'cam_right_wrist']
-    using_sim = True
+    using_sim = False
 
+    # Serial port configuration
+    ser_port = '/dev/ttyACM0'  # Change this to your serial port (e.g., /dev/ttyUSB0, /dev/ttyS0)
+    baud_rate = 250000
+
+    # Open the serial port
+    ser = serial.Serial(ser_port, baud_rate, timeout=1)
+    time.sleep(2)
+
+    # Create one thread
+    read_thread = threading.Thread(target=read_from_serial, args=(ser,data_queue))
+
+    # Start the thread
+    read_thread.start()
+    
     while True:
-        is_healthy = capture_one_episode(max_timesteps, camera_names, dataset_dir, dataset_name, overwrite, using_sim)
+        is_healthy = capture_one_episode(max_timesteps, camera_names, dataset_dir, dataset_name, overwrite, using_sim, ser)
         if is_healthy:
             break
     rclpy.shutdown()
+    read_thread.join()
+    ser.close()

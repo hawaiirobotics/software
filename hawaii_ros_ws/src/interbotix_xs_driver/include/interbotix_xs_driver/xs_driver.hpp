@@ -321,6 +321,8 @@ public:
     const std::string & name,
     const bool blocking = false);
 
+  int16_t get_gripper_present_load();
+
 private:
   // Pointer to the 'all' group (makes updating joint states more efficient)
   JointGroup * all_ptr;

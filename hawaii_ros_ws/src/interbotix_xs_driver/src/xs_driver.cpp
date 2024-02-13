@@ -418,11 +418,11 @@ bool InterbotixDriverXS::write_commands(
       dynamixel_commands[i] = dxl_wb.convertRadian2Value(
         get_group_info(name)->joint_ids.at(i),
         commands.at(i));
-      XSLOG_DEBUG(
-        "ID: %d, writing %s command %d.",
-        get_group_info(name)->joint_ids.at(i),
-        mode.c_str(),
-        dynamixel_commands[i]);
+      // XSLOG_DEBUG(
+      //   "ID: %d, writing %s command %d.",
+      //   get_group_info(name)->joint_ids.at(i),
+      //   mode.c_str(),
+      //   dynamixel_commands[i]);
     }
     // write position commands
     dxl_wb.syncWrite(
@@ -519,6 +519,8 @@ bool InterbotixDriverXS::write_joint_command(
   const std::string & name,
   float command)
 {
+  static float safe_gripper_position = 0.0f;
+  
   const std::string mode = motor_map[name].mode;
   if (
     (mode == mode::POSITION) ||
@@ -530,6 +532,31 @@ bool InterbotixDriverXS::write_joint_command(
     if (mode == mode::LINEAR_POSITION) {
       // convert from linear position if necessary
       command = convert_linear_position_to_radian(name, command);
+    }
+    if (name == "gripper") {
+      // Vectors to store the joint states
+      std::vector<float> positions;
+      std::vector<float> velocities;
+      std::vector<float> effort;
+      bool success = get_joint_states("all", &positions, &velocities, &effort);
+      if (!success) {
+        XSLOG_ERROR("Could not get joint states");
+        return false;
+      }
+
+      int16_t present_load = get_gripper_present_load();
+      printf("Present_Load: %d\n", present_load);
+      int16_t load_limit = -300;
+      if (present_load > load_limit) {
+        if (!positions.empty()) {
+          safe_gripper_position = positions.at(6);
+        }
+      }
+      if (present_load < load_limit && command <= safe_gripper_position) {
+        //not okay to proceed with command
+        XSLOG_ERROR("Command Rejected: Present Load '%d' on Motor '%s' too high, Present Pos: %f, Commanded Pos: %f.", present_load, name.c_str(), positions.at(6), command);
+          return false;
+        }  
     }
     XSLOG_DEBUG(
       "ID: %d, writing %s command %f.",
@@ -748,28 +775,20 @@ float InterbotixDriverXS::convert_linear_position_to_radian(
   const std::string & name,
   const float & linear_position)
 {
-  float half_dist = linear_position / 2.0;
-  float arm_length = gripper_map[name].arm_length;
-  float horn_radius = gripper_map[name].horn_radius;
-
-  // (pi / 2) - acos(horn_rad^2 + (pos / 2)^2 - arm_length^2) / (2 * horn_rad * (pos / 2))
-  return 3.14159 / 2.0 - \
-         acos(
-    (pow(horn_radius, 2) + \
-    pow(half_dist, 2) - \
-    pow(arm_length, 2)) / (2 * horn_radius * half_dist));
+    float start_angle = 2*3.14159/2; // 360 - 180 = 180 degrees
+    float m_per_rad = 0.01; // 10mm / rad
+    float upper_pos_limit = 0.057;
+    return start_angle - (linear_position - upper_pos_limit)/m_per_rad;
 }
 
 float InterbotixDriverXS::convert_angular_position_to_linear(
   const std::string & name,
   const float & angular_position)
 {
-  float arm_length = gripper_map[name].arm_length;
-  float horn_radius = gripper_map[name].horn_radius;
-  float a1 = horn_radius * sin(angular_position);
-  float c = sqrt(pow(horn_radius, 2) - pow(a1, 2));
-  float a2 = sqrt(pow(arm_length, 2) - pow(c, 2));
-  return a1 + a2;
+  float start_angle = 2*3.14159/2; // 360 - 180 = 180 degrees
+  float m_per_rad = 0.01; // 10mm / rad
+  float upper_pos_limit = 0.057;
+  return upper_pos_limit - (start_angle-angular_position)*m_per_rad;
 }
 
 bool InterbotixDriverXS::retrieve_motor_configs(
@@ -1454,5 +1473,29 @@ bool InterbotixDriverXS::go_to_home_configuration(
   std::vector<float> home_positions(get_group_info(name)->joint_num, 0.0);
   return write_position_commands(name, home_positions, blocking);
 }
+
+int16_t InterbotixDriverXS::get_gripper_present_load() {
+    int16_t value_16 = 0;
+    int32_t value_32 = 0;
+    const char * log;
+    const std::string name = "gripper";
+    const std::string reg = "Present_Load";
+
+    // Read register for each servo and check result for success
+    if (!dxl_wb.itemRead(motor_map[name].motor_id, reg.c_str(), &value_32, &log)) {
+        XSLOG_ERROR("%s", log);
+        return 0;
+    } else {
+        XSLOG_DEBUG(
+            "ID: %d, reading reg: '%s', value: %d.", motor_map[name].motor_id, reg.c_str(), value_32);
+    }
+
+    // Cast the 32-bit value to a 16-bit value
+    // Required because present load is a 16-bit value, needed to interpret negative numbers in 2s complement correctly 
+    value_16 = static_cast<int16_t>(value_32);
+
+    return value_16;
+}
+
 
 }  // namespace interbotix_xs

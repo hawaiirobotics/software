@@ -3,18 +3,18 @@
   
   <xacro:property name="robot_name"                 default="Student_Arm"/>
   <xacro:property name="J1_limit_effort"            value="0"/>
-  <xacro:property name="J1_limit_lower"             value="${-pi}"/>
-  <xacro:property name="J1_limit_upper"             value="${pi}"/>
+  <xacro:property name="J1_limit_lower"             value="${-pi/2}"/>
+  <xacro:property name="J1_limit_upper"             value="${pi/2}"/>
   <xacro:property name="J1_limit_vel"               value="${pi}"/>
 
   <xacro:property name="J2_limit_effort"            value="0"/>
-  <xacro:property name="J2_limit_lower"             value="${radians(-80)}"/>
-  <xacro:property name="J2_limit_upper"             value="${radians(143)}"/>
+  <xacro:property name="J2_limit_lower"             value="-1.5708"/>
+  <xacro:property name="J2_limit_upper"             value="1.1694"/>
   <xacro:property name="J2_limit_vel"               value="${pi}"/>
 
   <xacro:property name="J3_limit_effort"            value="0"/>
-  <xacro:property name="J3_limit_lower"             value="-1.4"/>
-  <xacro:property name="J3_limit_upper"             value="1.8"/>
+  <xacro:property name="J3_limit_lower"             value="0"/>
+  <xacro:property name="J3_limit_upper"             value="${pi}"/>
   <xacro:property name="J3_limit_vel"               value="${pi}"/>
 
   <xacro:property name="J4_limit_effort"            value="0"/>
@@ -23,8 +23,8 @@
   <xacro:property name="J4_limit_vel"               value="${pi}"/>
 
   <xacro:property name="J5_limit_effort"            value="0"/>
-  <xacro:property name="J5_limit_lower"             value="-0.75"/>
-  <xacro:property name="J5_limit_upper"             value="2.9"/>
+  <xacro:property name="J5_limit_lower"             value="0"/>
+  <xacro:property name="J5_limit_upper"             value="${pi}"/>
   <xacro:property name="J5_limit_vel"               value="${pi}"/>
 
   <xacro:property name="J6_limit_effort"            value="0"/>
@@ -186,7 +186,7 @@
     type="revolute">
     <origin
       xyz="0.0221 0 0"
-      rpy="1.5708 1.0391 1.5708" />
+      rpy="1.5708 1.5708 1.5708" />
     <parent
       link="$(arg robot_name)/J1" />
     <child
@@ -244,7 +244,7 @@
     type="revolute">
     <origin
       xyz="-0.06275 0.242 0"
-      rpy="-3.1416 0 1.8245" />
+      rpy="-3.1416 0 3.1416" />
     <parent
       link="$(arg robot_name)/J2" />
     <child
@@ -360,7 +360,7 @@
     type="revolute">
     <origin
       xyz="0 -0.012639 0.012639"
-      rpy="1.5708 0.80221 1.5708" />
+      rpy="1.5708 1.5708 1.5708" />
     <parent
       link="$(arg robot_name)/J4" />
     <child

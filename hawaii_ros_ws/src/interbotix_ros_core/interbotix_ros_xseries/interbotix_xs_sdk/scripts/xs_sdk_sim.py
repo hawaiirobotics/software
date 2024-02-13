@@ -457,12 +457,10 @@ class InterbotixRobotXS(Node):
         :param linear_position: desired distance [m] between the two gripper fingers
         :return result: angular position [rad] that achieves the desired linear distance
         """
-        half_dist = linear_position / 2.0
-        arm_length = self.gripper_map[name]['arm_length']
-        horn_radius = self.gripper_map[name]['horn_radius']
-        return math.pi/2.0 - math.acos(
-            (horn_radius**2 + half_dist**2 - arm_length**2) / (2 * horn_radius * half_dist)
-        )
+        start_angle = 2*3.14159/2 # 360 - 180 = 180 degrees
+        m_per_rad = 0.01 # 10mm / rad
+        upper_pos_limit = 0.057
+        return start_angle - (linear_position - upper_pos_limit)/m_per_rad
 
     def robot_convert_angular_position_to_linear(
         self,
@@ -476,12 +474,10 @@ class InterbotixRobotXS(Node):
         :param angular_position: desired gripper angular position [rad]
         :return: linear position [m] from a gripper finger to the center of the gripper servo horn
         """
-        arm_length = self.gripper_map[name]['arm_length']
-        horn_radius = self.gripper_map[name]['horn_radius']
-        a1 = horn_radius * math.sin(angular_position)
-        c = math.sqrt(horn_radius**2 - a1**2)
-        a2 = math.sqrt(arm_length**2 - c**2)
-        return a1 + a2
+        start_angle = 2*3.14159/2 #270 degrees
+        m_per_rad  = 0.01 #10mm / rad
+        upper_pos_limit = 0.057
+        return upper_pos_limit - (start_angle-angular_position)*m_per_rad
 
     def robot_sub_command_group(self, msg: JointGroupCommand) -> None:
         """
@@ -801,7 +797,7 @@ class InterbotixRobotXS(Node):
                             ] = lin_pos
                             self.joint_states.position[
                                 self.js_index_map[gpr['right_finger']]
-                            ] = -lin_pos
+                            ] = lin_pos
                     else:
                         self.joint_states.position[self.js_index_map[joint]] = value
 

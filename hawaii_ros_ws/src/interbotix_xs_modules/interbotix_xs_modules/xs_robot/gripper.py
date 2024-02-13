@@ -38,7 +38,7 @@ import time
 
 from interbotix_xs_modules.xs_robot.core import InterbotixRobotXSCore
 from interbotix_xs_msgs.msg import JointSingleCommand
-from interbotix_xs_msgs.srv import RobotInfo
+from interbotix_xs_msgs.srv import RobotInfo, RegisterValues
 import rclpy
 from rclpy.executors import MultiThreadedExecutor
 from rclpy.logging import LoggingSeverity
@@ -139,7 +139,7 @@ class InterbotixGripperXSInterface:
         """
         Construct the Interbotix Gripper Module.
 
-        :param core: reference to the InterbotixRobotXSCore class containing the internal ROS
+        :param core: reference to the InterbotixRobotXSCore class cdontaining the internal ROS
             plumbing that drives the Python API
         :param gripper_name: name of the gripper joint as defined in the 'motor_config' yaml file;
             typically, this is 'gripper'
@@ -164,15 +164,18 @@ class InterbotixGripperXSInterface:
         self.gripper_pressure_lower_limit = gripper_pressure_lower_limit
         self.gripper_pressure_upper_limit = gripper_pressure_upper_limit
 
+        self.moving_time = 0.0
+        self.accel_time = 0.0
+
         # value = lower + pressure * range
         self.gripper_value = gripper_pressure_lower_limit + (
             gripper_pressure
             * (gripper_pressure_upper_limit - gripper_pressure_lower_limit)
         )
 
-        self.tmr_gripper_state = self.core.create_timer(
-            timer_period_sec=0.02, callback=self.gripper_state
-        )
+        # self.tmr_gripper_state = self.core.create_timer(
+        #     timer_period_sec=0.02, callback=self.gripper_state
+        # )
 
         while rclpy.ok() and not self.future_gripper_info.done():
             rclpy.spin_until_future_complete(self.core, self.future_gripper_info)
@@ -183,9 +186,9 @@ class InterbotixGripperXSInterface:
         self.left_finger_lower_limit = self.gripper_info.joint_lower_limits[0]
         self.left_finger_upper_limit = self.gripper_info.joint_upper_limits[0]
 
-        if self.gripper_info.mode not in ('current', 'pwm'):
+        if self.gripper_info.mode not in ('current', 'pwm', 'linear_position', 'position'):
             self.core.get_logger().error(
-                "Please set the gripper's 'operating mode' to 'pwm' or 'current'."
+                "Please set the gripper's 'operating mode' to 'pwm' or 'current' or 'linear_position' or 'position."
             )
             sys.exit(1)
 
@@ -230,13 +233,15 @@ class InterbotixGripperXSInterface:
             gripper_pos = self.core.joint_states.position[self.left_finger_index]
         # check if the gripper is within its limits
         if (
-            self.gripper_command.cmd > 0 and gripper_pos < self.left_finger_upper_limit
+            self.gripper_command.cmd >= -2.2864 and gripper_pos < self.left_finger_upper_limit
         ) or (
-            self.gripper_command.cmd < 0 and gripper_pos > self.left_finger_lower_limit
+            self.gripper_command.cmd >= -2.2864 and gripper_pos > self.left_finger_lower_limit
         ):
+
+            # self.set_trajectory_time(self.moving_time, self.accel_time)
             self.core.pub_single.publish(self.gripper_command)
             self.gripper_moving = True
-            time.sleep(delay)
+            # time.sleep(delay)
 
     def set_pressure(self, pressure: float) -> None:
         """
@@ -255,6 +260,11 @@ class InterbotixGripperXSInterface:
 
         :param delay: (optional) number of seconds to delay before returning control to the user
         """
+        if self.gripper_info.mode not in ('current', 'pwm'):
+            self.core.get_logger().error(
+                "Please set the gripper's 'operating mode' to 'pwm' or 'current'."
+            )
+            sys.exit(1)
         self.gripper_controller(-self.gripper_value, delay)
 
     def grasp(self, delay: float = 1.0) -> None:
@@ -263,4 +273,57 @@ class InterbotixGripperXSInterface:
 
         :param delay: (optional) number of seconds to delay before returning control to the user
         """
+        if self.gripper_info.mode not in ('current', 'pwm'):
+            self.core.get_logger().error(
+                "Please set the gripper's 'operating mode' to 'pwm' or 'current'."
+            )
+            sys.exit(1)
         self.gripper_controller(self.gripper_value, delay)
+
+    def set_gripper_position(self, value):
+        self.gripper_controller(value, delay=5.0)
+
+    def set_trajectory_time(
+        self,
+        moving_time: float = None,
+        accel_time: float = None
+    ) -> None:
+        """
+        Command the 'Profile_Velocity' and 'Profile_Acceleration' motor registers.
+
+        :param moving_time: (optional) duration in seconds that the robot should move
+        :param accel_time: (optional) duration in seconds that that robot should spend
+            accelerating/decelerating (must be less than or equal to half the moving_time)
+        """
+        self.core.get_logger().debug(
+            f'Updating timing params: {moving_time=}, {accel_time=}'
+        )
+        if moving_time is not None and moving_time != self.moving_time:
+            self.moving_time = moving_time
+            future_moving_time = self.core.srv_set_reg.call_async(
+                RegisterValues.Request(
+                    cmd_type='single',
+                    name=self.gripper_name,
+                    reg='Profile_Velocity',
+                    value=int(moving_time * 1000),
+                )
+            )
+            self.core.executor.spin_once_until_future_complete(
+                future=future_moving_time,
+                timeout_sec=0.1
+            )
+
+        if accel_time is not None and accel_time != self.accel_time:
+            self.accel_time = accel_time
+            future_accel_time = self.core.srv_set_reg.call_async(
+                RegisterValues.Request(
+                    cmd_type='single',
+                    name=self.gripper_name,
+                    reg='Profile_Acceleration',
+                    value=int(accel_time * 1000),
+                )
+            )
+            self.core.executor.spin_once_until_future_complete(
+                future=future_accel_time,
+                timeout_sec=0.1
+            )
