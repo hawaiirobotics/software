@@ -28,11 +28,11 @@ def read_from_serial(serial_port, data_queue):
     # will need to do more once the payload structure is finalized
     print("starting thread")
     try:
-        ser.flush()
-        ser.write(b'I am ready\n')
+        serial_port.flush()
+        serial_port.readline()
     except serial.SerialException as e:
         print("Error writing to serial:", e)
-        ser.close()
+        serial_port.close()
         exit(1)
     first_frame = True
     try:
@@ -45,9 +45,9 @@ def read_from_serial(serial_port, data_queue):
                     right_states = np.array(float_data[:7])
                     left_states = np.array(float_data[7:])
                     data_queue.put(np.concatenate((right_states, left_states)))
-    except KeyboardInterrupt:
+    except (KeyboardInterrupt, serial.SerialException):
         print("\nKeyboard interrupt received, closing serial port.")
-        ser.close()
+        serial_port.close()
     # while True:
         
     #         # Read a line from the serial port
@@ -87,7 +87,6 @@ def setup_student_arms(student_right):
     # reboot gripper motors, and set operating modes for all motors
     # setup_student_bot(student_left)
     setup_student_bot(student_right)
-    print("after setup")
     # student_left.core.robot_set_motor_registers("single", "gripper", 'current_limit', 1000) 
     # student_right.core.robot_set_motor_registers("single", "gripper", 'current_limit', 1000)
 
@@ -138,10 +137,8 @@ def capture_one_episode(max_timesteps, camera_names, dataset_dir, dataset_name, 
     if os.path.isfile(dataset_path) and not overwrite:
         print(f'Dataset already exist at \n{dataset_path}\nHint: set overwrite to True.')
         exit()
-    print("start")
 
     env = make_real_env()
-    print("after m,ake env")
 
     # setup student arms and move them to where teacher arms are
     setup_student_arms(env.student_right)
@@ -252,7 +249,7 @@ if __name__=='__main__':
     os.nice(1)
 
     overwrite = True
-    max_timesteps= 3000
+    max_timesteps= 1000
     dataset_name = "testing"
     dataset_dir = "testing"
     camera_names= ['cam_high']#, 'cam_low', 'cam_left_wrist', 'cam_right_wrist']
