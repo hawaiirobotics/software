@@ -3,13 +3,13 @@
   
   <xacro:property name="robot_name"                 default="Student_Arm"/>
   <xacro:property name="J1_limit_effort"            value="0"/>
-  <xacro:property name="J1_limit_lower"             value="${-pi}"/>
-  <xacro:property name="J1_limit_upper"             value="${pi}"/>
+  <xacro:property name="J1_limit_lower"             value="${-pi/2}"/>
+  <xacro:property name="J1_limit_upper"             value="${pi/2}"/>
   <xacro:property name="J1_limit_vel"               value="${pi}"/>
 
   <xacro:property name="J2_limit_effort"            value="0"/>
   <xacro:property name="J2_limit_lower"             value="-1.5708"/>
-  <xacro:property name="J2_limit_upper"             value="1.5708"/>
+  <xacro:property name="J2_limit_upper"             value="1.1694"/>
   <xacro:property name="J2_limit_vel"               value="${pi}"/>
 
   <xacro:property name="J3_limit_effort"            value="0"/>

@@ -167,8 +167,8 @@ def move_grippers(bot_list, target_pose_list, move_time):
 
 def setup_student_bot(bot):
     bot.core.robot_reboot_motors("single", "gripper", True)
-    bot.core.robot_set_operating_modes("group", "arm", "position", profile_type="time")
-    bot.core.robot_set_operating_modes("single", "gripper", "position", profile_type="time")
+    # bot.core.robot_set_operating_modes("group", "arm", "position", profile_type="time")
+    # bot.core.robot_set_operating_modes("single", "gripper", "position", profile_type="time")
     torque_on(bot)
 
 def torque_off(bot):

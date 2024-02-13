@@ -10,7 +10,7 @@ import threading
 import queue
 
 from real_env import make_real_env
-from teleop_utils import move_grippers, move_arms, setup_student_bot
+from teleop_utils import move_grippers, move_arms, setup_student_bot, get_arm_gripper_positions
 from teleop_utils import DT, STUDENT_GRIPPER_JOINT_OPEN, STUDENT_GRIPPER_JOINT_CLOSE
 
 # Create a shared queue
@@ -28,22 +28,26 @@ def read_from_serial(serial_port, data_queue):
     # will need to do more once the payload structure is finalized
     print("starting thread")
     try:
+        ser.flush()
         ser.write(b'I am ready\n')
     except serial.SerialException as e:
         print("Error writing to serial:", e)
         ser.close()
         exit(1)
     first_frame = True
-    while True:
-        if serial_port.in_waiting > 0:
-            line = serial_port.readline().decode('utf-8').strip()  # Read a line and strip trailing newline
-            # print("Received:", line)
-            if first_frame or setup_done:
-                first_frame= False
-                float_data = [float(element) for element in line.split(',')]
-                right_states = np.array(float_data[:7])
-                left_states = np.array(float_data[7:])
-                data_queue.put(np.concatenate((right_states, left_states)))
+    try:
+        while True:
+            if serial_port.in_waiting > 0:
+                line = serial_port.readline().decode('utf-8').strip()
+                if first_frame or setup_done:
+                    first_frame = False
+                    float_data = [float(element) for element in line.split(',')]
+                    right_states = np.array(float_data[:7])
+                    left_states = np.array(float_data[7:])
+                    data_queue.put(np.concatenate((right_states, left_states)))
+    except KeyboardInterrupt:
+        print("\nKeyboard interrupt received, closing serial port.")
+        ser.close()
     # while True:
         
     #         # Read a line from the serial port
@@ -83,16 +87,20 @@ def setup_student_arms(student_right):
     # reboot gripper motors, and set operating modes for all motors
     # setup_student_bot(student_left)
     setup_student_bot(student_right)
+    print("after setup")
     # student_left.core.robot_set_motor_registers("single", "gripper", 'current_limit', 1000) 
     # student_right.core.robot_set_motor_registers("single", "gripper", 'current_limit', 1000)
 
     # move student arms to teacher arm position
     start_arm_qpos = get_joint_states()
+    print(start_arm_qpos)
     # move_arms([student_left, student_right], [start_arm_qpos[:6],start_arm_qpos[7:-1]] , move_time=1.5)
-    move_arms([student_right], [start_arm_qpos[7:-1]] , move_time=1.5)
+    move_arms([student_right], [start_arm_qpos[7:-1]] , move_time=10)
+    print("done moving to zero")
     # move grippers to starting position
     # move_grippers([student_left, student_right], [STUDENT_GRIPPER_JOINT_OPEN] * 2, move_time=0.5)
     move_grippers([student_right], [STUDENT_GRIPPER_JOINT_OPEN] , move_time=1.5)
+    print("done moving gripper to home")
 
 
     # press gripper to start data collection
@@ -153,6 +161,8 @@ def capture_one_episode(max_timesteps, camera_names, dataset_dir, dataset_name, 
             print(data_queue.qsize())
         t0 = time.time() #
         action = get_joint_states()
+        # print("Gripper position command:", action[6])
+        # print("Current Gripper Position:", get_arm_gripper_positions(env.student_right))
         t1 = time.time() #
         ts = env.step(action)
         t2 = time.time() #
@@ -163,6 +173,7 @@ def capture_one_episode(max_timesteps, camera_names, dataset_dir, dataset_name, 
     # Open student grippers
     # move_grippers([env.student_left, env.student_right], [STUDENT_GRIPPER_JOINT_OPEN] * 2, move_time=0.5)
     move_grippers([env.student_right], [STUDENT_GRIPPER_JOINT_OPEN], move_time=1.5)
+    print("DONE")
         
     freq_mean = print_dt_diagnosis(actual_dt_history)
     if freq_mean < 42 and not using_sim:
@@ -241,7 +252,7 @@ if __name__=='__main__':
     os.nice(1)
 
     overwrite = True
-    max_timesteps= 1000
+    max_timesteps= 3000
     dataset_name = "testing"
     dataset_dir = "testing"
     camera_names= ['cam_high']#, 'cam_low', 'cam_left_wrist', 'cam_right_wrist']
