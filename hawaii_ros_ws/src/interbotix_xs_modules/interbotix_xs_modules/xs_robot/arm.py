@@ -72,9 +72,6 @@ class InterbotixManipulatorXS:
         robot_name: float = None,
         moving_time: float = 2.0,
         accel_time: float = 0.3,
-        gripper_pressure: float = 0.5,
-        gripper_pressure_lower_limit: int = 150,
-        gripper_pressure_upper_limit: int = 350,
         topic_joint_states: str = 'joint_states',
         logging_level: LoggingSeverity = LoggingSeverity.INFO,
         node_name: str = 'robot_manipulation',
@@ -99,15 +96,6 @@ class InterbotixManipulatorXS:
             accelerate/decelerate to/from max speed
         :param use_gripper: (optional) `True` if the gripper module should be initialized;
             otherwise, it won't be.
-        :param gripper_pressure: (optional) fraction from 0 - 1 where '0' means the gripper
-            operates at `gripper_pressure_lower_limit` and '1' means the gripper operates at
-            `gripper_pressure_upper_limit`
-        :param gripper_pressure_lower_limit: (optional) lowest 'effort' that should be applied to
-            the gripper if `gripper_pressure` is set to 0; it should be high enough to open/close
-            the gripper (~150 PWM or ~400 mA current)
-        :param gripper_pressure_upper_limit: (optional) largest 'effort' that should be applied to
-            the gripper if `gripper_pressure` is set to 1; it should be low enough that the motor
-            doesn't 'overload' when gripping an object for a few seconds (~350 PWM or ~900 mA)
         :param topic_joint_states: (optional) the specific JointState topic output by the xs_sdk
             node
         :param logging_level: (optional) rclpy logging severity level. Can be DEBUG, INFO, WARN,
@@ -143,9 +131,6 @@ class InterbotixManipulatorXS:
             self.gripper = InterbotixGripperXSInterface(
                 core=self.core,
                 gripper_name=gripper_name,
-                gripper_pressure=gripper_pressure,
-                gripper_pressure_lower_limit=gripper_pressure_lower_limit,
-                gripper_pressure_upper_limit=gripper_pressure_upper_limit,
             )
             
 
@@ -213,7 +198,7 @@ class InterbotixArmXSInterface:
         self.group_info: RobotInfo.Response = self.future_group_info.result()
         if self.group_info.profile_type != 'time' and self.group_info.profile_type != 'velocity':
             self.core.get_logger().error(
-                "Please set the group's 'profile_type' to 'time'."
+                "Please set the group's 'profile_type' to 'time' or 'velocity'."
             )
             exit(1)
         if self.group_info.mode != 'position':
@@ -462,9 +447,9 @@ class InterbotixArmXSInterface:
 
         :param joint_name: name of the joint to control
         :param position: desired position [rad]
-        :param moving_time: (optional) duration in seconds that the robot should move
+        :param moving_time: (optional) duration in seconds that the robot should move if using time based profile
         :param accel_time: (optional) duration in seconds that that robot should spend
-            accelerating/decelerating (must be less than or equal to half the moving_time)
+            accelerating/decelerating (must be less than or equal to half the moving_time) if using time based profile
         :param blocking: (optional) whether the function should wait to return control to the user
               until the robot finishes moving
         :return: `True` if single joint was set; `False` otherwise
@@ -476,7 +461,8 @@ class InterbotixArmXSInterface:
         )
         if not self._check_single_joint_limit(joint_name, position):
             return False
-        # self.set_trajectory_time(moving_time, accel_time)
+        if self.group_info.profile_type == 'time':
+            self.set_trajectory_time(moving_time, accel_time)
         self.joint_commands[self.core.js_index_map[joint_name]] = position
         single_command = JointSingleCommand(name=joint_name, cmd=position)
         self.core.pub_single.publish(single_command)
