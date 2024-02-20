@@ -13,8 +13,8 @@ def main():
         init_node=True,
     )
     # bot.arm.set_joint_positions([joint_name='Joint5'], position=np.pi/2.0, moving_time=10, accel_time=0.5)
-    bot.arm.go_to_sleep_pose(moving_time=10, accel_time=0.5)
-    # bot.arm.set_single_joint_position(joint_name='Joint5', position=np.pi/2.0, moving_time=10, accel_time=0.5)
+    # bot.arm.go_to_sleep_pose(moving_time=10, accel_time=0.5)
+    bot.arm.set_single_joint_position(joint_name='Joint4', position=-0.5)
     # time.sleep(0.5)
     # bot.arm.set_single_joint_position(joint_name='Joint2', position=np.pi/2.0, moving_time=2, accel_time=0.5)
     # bot.arm.set_single_joint_position(joint_name='Joint2', position=0.728)

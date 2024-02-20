@@ -13,8 +13,8 @@
   <xacro:property name="J2_limit_vel"               value="${pi}"/>
 
   <xacro:property name="J3_limit_effort"            value="0"/>
-  <xacro:property name="J3_limit_lower"             value="0"/>
-  <xacro:property name="J3_limit_upper"             value="${pi}"/>
+  <xacro:property name="J3_limit_lower"             value="0.08743"/>
+  <xacro:property name="J3_limit_upper"             value="3.05262"/>
   <xacro:property name="J3_limit_vel"               value="${pi}"/>
 
   <xacro:property name="J4_limit_effort"            value="0"/>

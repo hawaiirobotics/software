@@ -211,7 +211,7 @@ class InterbotixArmXSInterface:
             rclpy.spin_once(self.core)
 
         self.group_info: RobotInfo.Response = self.future_group_info.result()
-        if self.group_info.profile_type != 'time':
+        if self.group_info.profile_type != 'time' and self.group_info.profile_type != 'velocity':
             self.core.get_logger().error(
                 "Please set the group's 'profile_type' to 'time'."
             )
@@ -347,6 +347,8 @@ class InterbotixArmXSInterface:
                 <= theta_list[x]
                 <= self.group_info.joint_upper_limits[x]
             ):
+                print("at theta limit for joint:", x+1)
+                print(theta_list[x])
                 return False
             if speed_list[x] > self.group_info.joint_velocity_limits[x]:
                 return False
@@ -474,7 +476,7 @@ class InterbotixArmXSInterface:
         )
         if not self._check_single_joint_limit(joint_name, position):
             return False
-        self.set_trajectory_time(moving_time, accel_time)
+        # self.set_trajectory_time(moving_time, accel_time)
         self.joint_commands[self.core.js_index_map[joint_name]] = position
         single_command = JointSingleCommand(name=joint_name, cmd=position)
         self.core.pub_single.publish(single_command)

@@ -53,7 +53,7 @@ motors:
     Drive_Mode: 0
     Velocity_Limit: 131
     Min_Position_Limit: 1024
-    Max_Position_Limit: 3072
+    Max_Position_Limit: 2818
     Secondary_ID: 2
 
   Joint3:

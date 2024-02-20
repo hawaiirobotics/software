@@ -418,11 +418,11 @@ bool InterbotixDriverXS::write_commands(
       dynamixel_commands[i] = dxl_wb.convertRadian2Value(
         get_group_info(name)->joint_ids.at(i),
         commands.at(i));
-      // XSLOG_DEBUG(
-      //   "ID: %d, writing %s command %d.",
-      //   get_group_info(name)->joint_ids.at(i),
-      //   mode.c_str(),
-      //   dynamixel_commands[i]);
+      XSLOG_DEBUG(
+        "ID: %d, writing %s command %d.",
+        get_group_info(name)->joint_ids.at(i),
+        mode.c_str(),
+        dynamixel_commands[i]);
     }
     // write position commands
     dxl_wb.syncWrite(

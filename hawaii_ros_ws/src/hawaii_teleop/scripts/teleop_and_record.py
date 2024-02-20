@@ -94,7 +94,7 @@ def setup_student_arms(student_right):
     start_arm_qpos = get_joint_states()
     print(start_arm_qpos)
     # move_arms([student_left, student_right], [start_arm_qpos[:6],start_arm_qpos[7:-1]] , move_time=1.5)
-    move_arms([student_right], [start_arm_qpos[7:-1]] , move_time=10)
+    move_arms([student_right], [start_arm_qpos[:6]] , move_time=10)
     print("done moving to zero")
     # move grippers to starting position
     # move_grippers([student_left, student_right], [STUDENT_GRIPPER_JOINT_OPEN] * 2, move_time=0.5)
@@ -158,6 +158,7 @@ def capture_one_episode(max_timesteps, camera_names, dataset_dir, dataset_name, 
             print(data_queue.qsize())
         t0 = time.time() #
         action = get_joint_states()
+        # print(action)
         # print("Gripper position command:", action[6])
         # print("Current Gripper Position:", get_arm_gripper_positions(env.student_right))
         t1 = time.time() #
