@@ -1,10 +1,10 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Source the workspace
 source ./install/setup.bash
 
 # Run your launch file
-ros2 launch hawaii_teleop hawaii_teleop.launch.py &
+ros2 launch hawaii_teleop hawaii_teleop.launch.py $@ &
 ROS_NODES_PIDS=($!)
 
 # Wait for the launch file to start up (adjust sleep time as needed)
