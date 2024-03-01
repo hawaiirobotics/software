@@ -1,5 +1,6 @@
 #include <Arduino.h>
 #include <Wire.h>
+#include <string.h>
 #include <Adafruit_GFX.h>    // Core graphics library
 #include <Adafruit_ST7789.h> // Hardware-specific library for ST7789
 #include <SPI.h>
@@ -44,12 +45,20 @@
 // -------I2C Bus 1-----
 // Honolulu Extender Addr 77h
 // Teacher Arm Extender Addr 76h
-// Encoder Addresses TBD
+// Encoder Addresses 
+// J1 0x20
+// J2 0x41
+// J3 0x43
+// J4 0x42
+// J5 0x45
+// J6 0x44
+// J7 0x46
+const uint8_t ARM1[] = {0x20, 0x41, 0x43, 0x42, 0x45, 0x44, 0x46};
 // -------I2C Bus 2-----
 // Honolulu Extender Addr 77h
 // Teacher Arm Extender Addr 76h
-// Encoder Addresses TBD
-
+// Encoder Addresses TBD update this
+const uint8_t ARM2[] = {0x20, 0x41, 0x43, 0x42, 0x45, 0x44, 0x46};
 
 int RA_FUSE_OC = 29;
 int RA_FUSE_GOK = 33;
@@ -85,7 +94,7 @@ Adafruit_ST7789 tft = Adafruit_ST7789(TFT_CS, TFT_DC, TFT_RST);
 #define NUM_LEDS 10
 Adafruit_NeoPixel strip = Adafruit_NeoPixel(NUM_LEDS, LIGHTING, NEO_GRB + NEO_KHZ800);
 
-float p = 3.1415926;
+const float p = 3.1415926;
 
 
 void testdrawtext(char *text, uint16_t color) {
@@ -281,44 +290,42 @@ void setup()
 
 void loop()
 {
-    char buffer[200];  // Buffer to hold the formatted string
-
     //------FUSES------
     // Right Arm
     // Analog
-    Serial.print("Right Arm IMON: ");
-    Serial.println(analogRead(RA_FUSE_IMON));
-    Serial.print("Right Arm VTEMP: ");
-    Serial.println(analogRead(RA_FUSE_VTEMP));
+    // Serial.print("Right Arm IMON: ");
+    // Serial.println(analogRead(RA_FUSE_IMON));
+    // Serial.print("Right Arm VTEMP: ");
+    // Serial.println(analogRead(RA_FUSE_VTEMP));
     // Digital
-    Serial.print("Right Arm OC: ");
-    Serial.println(digitalRead(RA_FUSE_OC));
-    Serial.print("Right Arm GOK: ");
-    Serial.println(digitalRead(RA_FUSE_GOK));
+    // Serial.print("Right Arm OC: ");
+    // Serial.println(digitalRead(RA_FUSE_OC));
+    // Serial.print("Right Arm GOK: ");
+    // Serial.println(digitalRead(RA_FUSE_GOK));
 
     // Left Arm
     // Analog
-    Serial.print("Left Arm IMON: ");
-    Serial.println(analogRead(LA_FUSE_IMON));
-    Serial.print("Left Arm VTEMP: ");
-    Serial.println(analogRead(LA_FUSE_VTEMP));
+    // Serial.print("Left Arm IMON: ");
+    // Serial.println(analogRead(LA_FUSE_IMON));
+    // Serial.print("Left Arm VTEMP: ");
+    // Serial.println(analogRead(LA_FUSE_VTEMP));
     // Digital
-    Serial.print("Left Arm OC: ");
-    Serial.println(digitalRead(LA_FUSE_OC));
-    Serial.print("Left Arm GOK: ");
-    Serial.println(digitalRead(LA_FUSE_GOK));
+    // Serial.print("Left Arm OC: ");
+    // Serial.println(digitalRead(LA_FUSE_OC));
+    // Serial.print("Left Arm GOK: ");
+    // Serial.println(digitalRead(LA_FUSE_GOK));
 
     // 5V Line
     // Analog
-    Serial.print("5V Line IMON: ");
-    Serial.println(analogRead(FIVE_V_FUSE_IMON));
-    Serial.print("5V Line VTEMP: ");
-    Serial.println(analogRead(FIVE_V_FUSE_VTEMP));
+    // Serial.print("5V Line IMON: ");
+    // Serial.println(analogRead(FIVE_V_FUSE_IMON));
+    // Serial.print("5V Line VTEMP: ");
+    // Serial.println(analogRead(FIVE_V_FUSE_VTEMP));
     // Digital
-    Serial.print("5V Line OC: ");
-    Serial.println(digitalRead(FIVE_V_FUSE_OC));
-    Serial.print("5V Line GOK: ");
-    Serial.println(digitalRead(FIVE_V_FUSE_GOK));
+    // Serial.print("5V Line OC: ");
+    // Serial.println(digitalRead(FIVE_V_FUSE_OC));
+    // Serial.print("5V Line GOK: ");
+    // Serial.println(digitalRead(FIVE_V_FUSE_GOK));
 
     
     //------CURRENT SENSE------
@@ -346,40 +353,42 @@ void loop()
     // 5v Voltage
     int FIVE_V = readRegister(Wire, 0x45, 0x02, 2);
 
-    sprintf(buffer, "TAC %d, TAV %d, LC %d, LV %d, 3v3C %d, 3v3V %d, 5vC %d, 5vV %d", TA_C, TA_V, L_C, L_V, THREE_C, THREE_V, FIVE_C, FIVE_V);
+    // char buffer[200];
+    // sprintf(buffer, "TAC %d, TAV %d, LC %d, LV %d, 3v3C %d, 3v3V %d, 5vC %d, 5vV %d", TA_C, TA_V, L_C, L_V, THREE_C, THREE_V, FIVE_C, FIVE_V);
+    // Serial.println(buffer);
+
+    //--------TEACHER ARM JOINT ANGLES-------
+    float arm1_joint_angles[7];
+    float arm2_joint_angles[7];
+
+
+    for(int i = 0; i < 7; i++) {
+      arm1_joint_angles[i] = (readRegister(Wire1, ARM1[i], 0x0C, 2) / 4096) * TWO_PI;
+    }
+
+    for(int i = 0; i < 7; i++) {
+      arm2_joint_angles[i] = (readRegister(Wire2, ARM2[i], 0x0C, 2) / 4096) * TWO_PI;
+    }
+
+    // Send ARM1 angles back over serial
+    char buffer[200];
+    strncat(buffer, "SA,", 3);
+    for(int i = 0; i < 7; i++) {
+      sprintf(buffer + strlen(buffer), "%f,", arm1_joint_angles[i]);
+    }
+    strncat(buffer, "EA", 2);
+
     Serial.println(buffer);
 
-    //--------I2C DIFF LINK HEALTH-------
-    // Honolulu Link Health
-    // int scratch1 = readRegister(Wire1, 0x77, 0x05, 1);
-    // int scratch2 = readRegister(Wire2, 0x77, 0x05, 1);
+    // Send ARM2 angles back over serial
+    char buffer[200];
+    strncat(buffer, "SB,", 4);
+    for(int i = 0; i < 7; i++) {
+      sprintf(buffer + strlen(buffer), "%f,", arm2_joint_angles[i]);
+    }
+    strncat(buffer, "EB", 2);
 
-    // int local_link1_status = readRegister(Wire1, 0x77, 0x02, 1);
-    // int local_link1_fault = readRegister(Wire1, 0x77, 0x04, 1);
-    // int local_link2_status = readRegister(Wire2, 0x77, 0x02, 1);
-    // int local_link2_fault = readRegister(Wire2, 0x77, 0x04, 1);
-
-    // // Remote Link Health
-    // int remote_link1_status = readRegister(Wire1, 0x76, 0x02, 1);
-    // int remote_link1_fault = readRegister(Wire1, 0x76, 0x04, 1);
-    // int remote_link2_status = readRegister(Wire2, 0x76, 0x02, 1);
-    // int remote_link2_fault = readRegister(Wire2, 0x76, 0x04, 1);
-
-    // readRegister(Wire1, 0x40, 0x20, 1);
-    // readRegister(Wire2, 0x40, 0x20, 1);
-
-    delay(10);
-    Wire2.beginTransmission(0x40);
-    Wire2.write(0x20);
-    Wire2.endTransmission();
-
-
-
-
-
-    // sprintf(buffer, "L1S %d, L1F %d, L2S %d, L2F %d, R1S %d, R1F %d, R2S %d, R2F %d, LS1 %d, LS2 %d", local_link1_status, local_link1_fault, local_link2_status, local_link2_fault, 
-    //     remote_link1_status, remote_link1_fault, remote_link2_status, remote_link2_fault, scratch1, scratch2);
-    // Serial.println(buffer);
+    Serial.println(buffer);
 
     tftPrintTest();
     delay(100);
