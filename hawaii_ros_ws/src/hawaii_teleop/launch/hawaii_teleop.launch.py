@@ -142,25 +142,25 @@ def generate_launch_description():
         #     arguments=[x_spawn_right, y_spawn_right, '0', '0', '0', '0.707090', '0.707123','/world', f"/student_right/base_link"] #update x,y,z,and quats
         # ),
 
-        # Node(
-        #     package='usb_cam',
-        #     executable='usb_cam_node_exe',
-        #     name='usb_cam_high',
-        #     output='screen',
-        #     namespace='usb_cam_high',
-        #     parameters=[
-        #         {'video_device': '/dev/video0'},
-        #         {'framerate': 60.0},
-        #         {'image_width': 640},
-        #         {'image_height': 480},
-        #         {'pixel_format': 'yuyv'},
-        #         {'camera_frame_id': 'usb_cam'},
-        #         {'io_method': 'mmap'},
-        #         {'autofocus': False},
-        #         {'focus': 5},
-        #         {'autoexposure': True}
-        #     ]
-        # ),
+        Node(
+            package='usb_cam',
+            executable='usb_cam_node_exe',
+            name='usb_cam_high',
+            output='screen',
+            namespace='usb_cam_high',
+            parameters=[
+                {'video_device': '/dev/video0'},
+                {'framerate': 60.0},
+                {'image_width': 640},
+                {'image_height': 480},
+                {'pixel_format': 'yuyv'},
+                {'camera_frame_id': 'usb_cam'},
+                {'io_method': 'mmap'},
+                {'autofocus': False},
+                {'focus': 5},
+                {'autoexposure': True}
+            ]
+        ),
         # Node(
         #     package='usb_cam',
         #     executable='usb_cam_node_exe',
