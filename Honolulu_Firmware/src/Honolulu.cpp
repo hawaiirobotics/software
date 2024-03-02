@@ -167,16 +167,16 @@ void setup()
   // tft rotation
   tft.setRotation(3);
 
-  tft.fillScreen(ST77XX_BLACK);
-  delay(500);
+  // tft.fillScreen(ST77XX_BLACK);
+  // delay(500);
 
   // large block of text
-  tft.fillScreen(ST77XX_BLACK);
-  testdrawtext("Lorem ipsum dolor sit amet, consectetur adipiscing elit. Curabitur adipiscing ante sed nibh tincidunt feugiat. Maecenas enim massa, fringilla sed malesuada et, malesuada sit amet turpis. Sed porttitor neque ut ante pretium vitae malesuada nunc bibendum. Nullam aliquet ultrices massa eu hendrerit. Ut sed nisi lorem. In vestibulum purus a tortor imperdiet posuere. ", ST77XX_WHITE);
-  delay(1000);
+  // tft.fillScreen(ST77XX_BLACK);
+  // testdrawtext("Lorem ipsum dolor sit amet, consectetur adipiscing elit. Curabitur adipiscing ante sed nibh tincidunt feugiat. Maecenas enim massa, fringilla sed malesuada et, malesuada sit amet turpis. Sed porttitor neque ut ante pretium vitae malesuada nunc bibendum. Nullam aliquet ultrices massa eu hendrerit. Ut sed nisi lorem. In vestibulum purus a tortor imperdiet posuere. ", ST77XX_WHITE);
+  // delay(1000);
 
-  tftPrintTest();
-  delay(1000);
+  // tftPrintTest();
+  // delay(1000);
 
   //-------I2C-------
   // Current Sense
@@ -290,6 +290,8 @@ void setup()
 
 void loop()
 {
+    static uint8_t counter = 0;
+    char buffer[200];
     //------FUSES------
     // Right Arm
     // Analog
@@ -363,15 +365,18 @@ void loop()
 
 
     for(int i = 0; i < 7; i++) {
-      arm1_joint_angles[i] = (readRegister(Wire1, ARM1[i], 0x0C, 2) / 4096) * TWO_PI;
+      arm1_joint_angles[i] = (readRegister(Wire1, ARM1[i], 0x0C, 2) / 4096.0) * TWO_PI;
+      // arm1_joint_angles[i] = readRegister(Wire1, ARM1[i], 0x0C, 2);
     }
 
     for(int i = 0; i < 7; i++) {
-      arm2_joint_angles[i] = (readRegister(Wire2, ARM2[i], 0x0C, 2) / 4096) * TWO_PI;
+      arm2_joint_angles[i] = (readRegister(Wire2, ARM2[i], 0x0C, 2) / 4096.0) * TWO_PI;
     }
 
+
+
     // Send ARM1 angles back over serial
-    char buffer[200];
+    memset(buffer, 0, 200);
     strncat(buffer, "SA,", 3);
     for(int i = 0; i < 7; i++) {
       sprintf(buffer + strlen(buffer), "%f,", arm1_joint_angles[i]);
@@ -380,8 +385,10 @@ void loop()
 
     Serial.println(buffer);
 
+
+
     // Send ARM2 angles back over serial
-    char buffer[200];
+    memset(buffer, 0, 200);
     strncat(buffer, "SB,", 4);
     for(int i = 0; i < 7; i++) {
       sprintf(buffer + strlen(buffer), "%f,", arm2_joint_angles[i]);
@@ -390,6 +397,24 @@ void loop()
 
     Serial.println(buffer);
 
-    tftPrintTest();
+    if(counter == 5){
+      counter = 0;
+
+      tft.setTextWrap(true);
+      tft.setCursor(0, 0);
+      // tft.fillScreen(ST77XX_BLACK);
+      tft.setTextColor(ST77XX_WHITE);
+      tft.setTextSize(2);
+
+      memset(buffer, 0, 200);
+      sprintf(buffer, "TAC %4.2f, TAV %4.2f\nLC %4.2f, LV %4.2f\n3v3C %4.2f, 3v3V %4.2f\n5vC %4.2f, 5vV %4.2f", TA_C, TA_V, L_C, L_V, THREE_C, THREE_V, FIVE_C, FIVE_V);
+
+      tft.print(buffer);
+    } else {
+      counter++;
+    }
+
+
+    // tftPrintTest();
     delay(100);
 }
