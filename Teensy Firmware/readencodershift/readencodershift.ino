@@ -14,7 +14,8 @@ struct EncoderSettings {
 };
 
 // Manually calibrated settings for the encoders
-EncoderSettings encoders[7] = {
+EncoderSettings encoders[14] = {
+// arm 1
 { -90.0, 90.0, -238.18, 1, 0x40,    361, 0},
 { -90.0, 67.7, -153.0, -1, 0x41,  361, 0},
 { 6.0, 175.0, -299.0, -1, 0x43,   361, 0},
@@ -22,6 +23,14 @@ EncoderSettings encoders[7] = {
 { 0.0, 180.0, -180.0, -1, 0x45,   361, 0},
 { -180.0, 180.0, -138.8, 1, 0x44, 361, 0},
 { -144.0, 180.0, -243.46, 1, 0x46, 361, 0},
+// arm 2
+{ -90.0, 90.0, -332.23, 1, 0x40,    361, 0},
+{ -90.0, 67.2, -258.5, -1, 0x41,  361, 0},
+{ 6.0, 175.0, -280.63, -1, 0x43,   361, 0},
+{ -180.0, 180.0, -26.9, -1, 0x42, 361, 0},
+{ 0.0, 180.0, -256.03, -1, 0x45,   361, 0},
+{ -180.0, 180.0, -63.11, 1, 0x44, 361, 0},
+{ -144.0, 180.0, -161.54, -1, 0x46, 361, 0},
 };
 
 void setup() {
@@ -58,7 +67,7 @@ float mapAngle(EncoderSettings& encoder, float newAngle) {
 
   float convert = 0.0;
   if (encoder.address == 0x46) { //gripper
-    convert = encoder.maxAngleOut + ((angle+encoder.offset) * (encoder.minAngleOut - encoder.maxAngleOut)) / 68;
+    convert = encoder.maxAngleOut + ((angle+encoder.offset) * encoder.scale * (encoder.minAngleOut - encoder.maxAngleOut)) / 58;
   } else {
     convert = (angle + encoder.offset)*encoder.scale;
   }
@@ -74,7 +83,7 @@ float mapAngle(EncoderSettings& encoder, float newAngle) {
 
 void loop() {
 
-  for (int i =0; i < 7; i++) {
+  for (int i = 7; i < 14; i++) {
     int rawAngle = readRawAngle(encoders[i].address);
 
     float angle = (rawAngle / static_cast<float>(fullScale)) * maxAngle;
