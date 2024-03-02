@@ -39,9 +39,16 @@ def read_from_serial(serial_port, data_queue):
         while True:
             if serial_port.in_waiting > 0:
                 line = serial_port.readline().decode('utf-8').strip()
+                elements = line.split(',')
+                
+                if first_frame:
+                    while len(elements) != 14:
+                        line = serial_port.readline().decode('utf-8').strip()
+                        elements = line.split(',')
+
                 if first_frame or setup_done:
                     first_frame = False
-                    float_data = [float(element) for element in line.split(',')]
+                    float_data = [float(element) for element in elements]
                     right_states = np.array(float_data[:7])
                     left_states = np.array(float_data[7:])
                     data_queue.put(np.concatenate((right_states, left_states)))
@@ -87,8 +94,6 @@ def setup_student_arms(student_right):
     # reboot gripper motors, and set operating modes for all motors
     # setup_student_bot(student_left)
     setup_student_bot(student_right)
-    # student_left.core.robot_set_motor_registers("single", "gripper", 'current_limit', 1000) 
-    # student_right.core.robot_set_motor_registers("single", "gripper", 'current_limit', 1000)
 
     # move student arms to teacher arm position
     start_arm_qpos = get_joint_states()
@@ -158,9 +163,6 @@ def capture_one_episode(max_timesteps, camera_names, dataset_dir, dataset_name, 
             print(data_queue.qsize())
         t0 = time.time() #
         action = get_joint_states()
-        # print(action)
-        # print("Gripper position command:", action[6])
-        # print("Current Gripper Position:", get_arm_gripper_positions(env.student_right))
         t1 = time.time() #
         ts = env.step(action)
         t2 = time.time() #
@@ -182,25 +184,27 @@ def capture_one_episode(max_timesteps, camera_names, dataset_dir, dataset_name, 
     For each timestep:
     observations
     - images
-        - cam_high          (480, 640, 3) 'uint8'
-        - cam_low           (480, 640, 3) 'uint8'
-        - cam_left_wrist    (480, 640, 3) 'uint8'
-        - cam_right_wrist   (480, 640, 3) 'uint8'
+        - cam_high          (480, 640, 2) 'uint8'
+        - cam_low           (480, 640, 2) 'uint8'
+        - cam_left_wrist    (480, 640, 2) 'uint8'
+        - cam_right_wrist   (480, 640, 2) 'uint8'
     - qpos                  (14,)         'float64'
     - qvel                  (14,)         'float64'
     - effort                (14,)         'float64'
     - action                (14,)         'float64'
     """
-
+    print("before data dict")
     data_dict = {
         '/observations/qpos': [],
         '/observations/qvel': [],
         '/observations/effort': [],
         '/action': [],
     }
+    print("before for cam_name")
     for cam_name in camera_names:
         data_dict[f'/observations/images/{cam_name}'] = []
 
+    print("before while actions")
     while actions:
         action = actions.pop(0)
         ts = timesteps.pop(0)
@@ -221,6 +225,7 @@ def capture_one_episode(max_timesteps, camera_names, dataset_dir, dataset_name, 
     # cv2.destroyAllWindows()
 
     # HDF5
+    print("before making hdf5 file")
     t0 = time.time()
     with h5py.File(dataset_path + '.hdf5', 'w', rdcc_nbytes=1024**2*2) as root:
         root.attrs['sim'] = False
