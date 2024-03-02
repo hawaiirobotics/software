@@ -15,7 +15,7 @@ struct EncoderSettings {
 
 // Manually calibrated settings for the encoders
 EncoderSettings encoders[7] = {
-{ -90.0, 90.0, -90.0, 1, 0x20,    361, 0},
+{ -90.0, 90.0, -238.18, 1, 0x40,    361, 0},
 { -90.0, 67.7, -153.0, -1, 0x41,  361, 0},
 { 6.0, 175.0, -299.0, -1, 0x43,   361, 0},
 { -180.0, 180.0, -33.0, -1, 0x42, 361, 0},
@@ -85,7 +85,7 @@ void loop() {
   }
   Serial.println("0,0,0,0,0,0,0");
 
-  delay(1000 / 50);  // 50Hz
+  delay(1000 / 25);  // 50Hz
 }
 
 int readRawAngle(uint8_t i2cAddress) {
