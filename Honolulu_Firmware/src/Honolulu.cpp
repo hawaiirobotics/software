@@ -53,12 +53,41 @@
 // J5 0x45
 // J6 0x44
 // J7 0x46
-const uint8_t ARM1[] = {0x20, 0x41, 0x43, 0x42, 0x45, 0x44, 0x46};
+// const uint8_t ARM1[] = {0x40, 0x41, 0x43, 0x42, 0x45, 0x44, 0x46};
 // -------I2C Bus 2-----
 // Honolulu Extender Addr 77h
 // Teacher Arm Extender Addr 76h
 // Encoder Addresses TBD update this
-const uint8_t ARM2[] = {0x20, 0x41, 0x43, 0x42, 0x45, 0x44, 0x46};
+// const uint8_t ARM2[] = {0x40, 0x41, 0x43, 0x42, 0x45, 0x44, 0x46};
+
+struct EncoderSettings {
+  float minAngleOut;
+  float maxAngleOut;
+  float offset;
+  int scale;
+  uint8_t address;
+  float lastAngle;
+  float continuousAngle;
+};
+
+EncoderSettings encoders[14] = {
+// arm 1
+{ -90.0, 90.0, -238.18, 1, 0x40,    361, 0},
+{ -90.0, 67.2, -153.0, -1, 0x41,  361, 0},
+{ 6.0, 175.0, -299.0, -1, 0x43,   361, 0},
+{ -180.0, 180.0, -33.0, -1, 0x42, 361, 0},
+{ 0.0, 180.0, -180.0, -1, 0x45,   361, 0},
+{ -180.0, 180.0, -138.8, 1, 0x44, 361, 0},
+{ -144.0, 180.0, -243.46, 1, 0x46, 361, 0},
+// arm 2
+{ -90.0, 90.0, -332.23, 1, 0x40,    361, 0},
+{ -90.0, 67.2, -258.5, -1, 0x41,  361, 0},
+{ 6.0, 175.0, -280.63, -1, 0x43,   361, 0},
+{ -180.0, 180.0, -26.9, -1, 0x42, 361, 0},
+{ 0.0, 180.0, -256.03, -1, 0x45,   361, 0},
+{ -180.0, 180.0, -63.11, 1, 0x44, 361, 0},
+{ -144.0, 180.0, -161.54, -1, 0x46, 361, 0},
+};
 
 int RA_FUSE_OC = 29;
 int RA_FUSE_GOK = 33;
@@ -96,13 +125,10 @@ Adafruit_NeoPixel strip = Adafruit_NeoPixel(NUM_LEDS, LIGHTING, NEO_GRB + NEO_KH
 
 const float p = 3.1415926;
 
-
-void testdrawtext(char *text, uint16_t color) {
-  tft.setCursor(0, 0);
-  tft.setTextColor(color);
-  tft.setTextWrap(true);
-  tft.print(text);
-}
+// update frequency in Hz
+#define UPDATE_FREQ 60
+// update period in microseconds
+#define UPDATE_RATE 1000000/UPDATE_FREQ
 
 int readRegister(TwoWire w, int chip_addr, int reg_addr, int length) {
     int result = 0;
@@ -112,50 +138,51 @@ int readRegister(TwoWire w, int chip_addr, int reg_addr, int length) {
     w.endTransmission();
     w.requestFrom(chip_addr, length);
 
-    while(w.available()) {
+    if (w.available() == 1) {
         result = (result << 8) + w.read();
     }
 
     return result;
 }
 
-void tftPrintTest() {
-  tft.setTextWrap(false);
-  tft.fillScreen(ST77XX_BLACK);
-  tft.setCursor(0, 0);
-  tft.setTextColor(ST77XX_RED);
-  tft.setTextSize(1);
-  tft.println("Hello World!");
-  tft.setTextColor(ST77XX_YELLOW);
-  tft.setTextSize(2);
-  tft.println("Hello World!");
-  tft.setTextColor(ST77XX_GREEN);
-  tft.setTextSize(3);
-  tft.println("Hello World!");
-  tft.setTextColor(ST77XX_BLUE);
-  tft.setTextSize(4);
-  tft.print(1234.567);
-  delay(1500);
-  tft.setCursor(0, 0);
-  tft.fillScreen(ST77XX_BLACK);
-  tft.setTextColor(ST77XX_WHITE);
-  tft.setTextSize(0);
-  tft.println("Hello World!");
-  tft.setTextSize(1);
-  tft.setTextColor(ST77XX_GREEN);
-  tft.print(p, 6);
-  tft.println(" Want pi?");
-  tft.println(" ");
-  tft.print(8675309, HEX); // print 8,675,309 out in HEX!
-  tft.println(" Print HEX!");
-  tft.println(" ");
-  tft.setTextColor(ST77XX_WHITE);
-  tft.println("Sketch has been");
-  tft.println("running for: ");
-  tft.setTextColor(ST77XX_MAGENTA);
-  tft.print(millis() / 1000);
-  tft.setTextColor(ST77XX_WHITE);
-  tft.print(" seconds.");
+float mapAngle(EncoderSettings& encoder, float newAngle) {
+  if (encoder.lastAngle < 361) {
+    float delta = newAngle - encoder.lastAngle;
+
+    // Check for wraparound
+    if (delta > 180) {
+      // Wrapped around clockwise
+      encoder.continuousAngle -= (360 - delta);
+    } else if (delta < -180) {
+      // Wrapped around counterclockwise
+      encoder.continuousAngle += (360 + delta);
+    } else {
+      // No wraparound
+      encoder.continuousAngle += delta;
+    }
+  } else {
+    encoder.continuousAngle = newAngle;
+  }
+
+  encoder.lastAngle = newAngle;  // Update the last angle for the next call
+  float angle = encoder.continuousAngle; // use continuous angle for all other encoders
+  if (encoder.address == 0x46){ //gripper
+    angle = newAngle; // use raw angle for gripper encoder
+  }
+
+  float convert = 0.0;
+  if (encoder.address == 0x46) { //gripper
+    convert = encoder.maxAngleOut + ((angle+encoder.offset) * encoder.scale * (encoder.minAngleOut - encoder.maxAngleOut)) / 58;
+  } else {
+    convert = (angle + encoder.offset)*encoder.scale;
+  }
+  if (convert > encoder.maxAngleOut) {
+    return encoder.maxAngleOut;
+  } else if (convert < encoder.minAngleOut) {
+    return encoder.minAngleOut;
+  } else {
+    return convert;
+  }
 }
 
 void setup()
@@ -166,17 +193,8 @@ void setup()
 
   // tft rotation
   tft.setRotation(3);
+  tft.fillScreen(ST77XX_BLACK);
 
-  // tft.fillScreen(ST77XX_BLACK);
-  // delay(500);
-
-  // large block of text
-  // tft.fillScreen(ST77XX_BLACK);
-  // testdrawtext("Lorem ipsum dolor sit amet, consectetur adipiscing elit. Curabitur adipiscing ante sed nibh tincidunt feugiat. Maecenas enim massa, fringilla sed malesuada et, malesuada sit amet turpis. Sed porttitor neque ut ante pretium vitae malesuada nunc bibendum. Nullam aliquet ultrices massa eu hendrerit. Ut sed nisi lorem. In vestibulum purus a tortor imperdiet posuere. ", ST77XX_WHITE);
-  // delay(1000);
-
-  // tftPrintTest();
-  // delay(1000);
 
   //-------I2C-------
   // Current Sense
@@ -188,12 +206,13 @@ void setup()
   // 17 SDA
   // 16 SCL
   Wire1.begin();
+  Wire1.setClock(400000UL);
 
   // Teacher Arm 2
   // 25 SDA
   // 24 SCL
   Wire2.begin();
-  Wire2.setClock( 50000UL );
+  Wire2.setClock(400000UL);
 
   //-------FUSE GPIO--------
   // Right Arm EFuse
@@ -285,11 +304,13 @@ void setup()
   Wire.endTransmission();
 
   //setup serial
-  Serial.begin(115200);
+  Serial.begin(250000);
 }
 
 void loop()
 {
+    uint32_t startTime = micros(); // Record the start time
+
     static uint8_t counter = 0;
     char buffer[200];
     //------FUSES------
@@ -334,25 +355,25 @@ void loop()
     // Read Teacher Arm Current
     int TA_C = readRegister(Wire, 0x40, 0x01, 2);
 
-    // Read Teacher Arm Voltage
+    // // Read Teacher Arm Voltage
     int TA_V = readRegister(Wire, 0x40, 0x02, 2);
 
-    // Lighting Current
+    // // Lighting Current
     int L_C = readRegister(Wire, 0x44, 0x01, 2);
 
-    // Lighting Voltage
+    // // Lighting Voltage
     int L_V = readRegister(Wire, 0x44, 0x02, 2);
 
-    // 3v3 Current
+    // // 3v3 Current
     int THREE_C = readRegister(Wire, 0x41, 0x01, 2);
 
-    // 3v3 Voltage
+    // // 3v3 Voltage
     int THREE_V = readRegister(Wire, 0x41, 0x02, 2);
 
-    // 5v Current
+    // // 5v Current
     int FIVE_C = readRegister(Wire, 0x45, 0x01, 2);
 
-    // 5v Voltage
+    // // 5v Voltage
     int FIVE_V = readRegister(Wire, 0x45, 0x02, 2);
 
     // char buffer[200];
@@ -363,37 +384,38 @@ void loop()
     float arm1_joint_angles[7];
     float arm2_joint_angles[7];
 
+    float rawAngle = 0.0;
 
-    for(int i = 0; i < 7; i++) {
-      arm1_joint_angles[i] = (readRegister(Wire1, ARM1[i], 0x0C, 2) / 4096.0) * TWO_PI;
-      // arm1_joint_angles[i] = readRegister(Wire1, ARM1[i], 0x0C, 2);
+    for(int i = 7; i < 14; i++) {
+      rawAngle = (readRegister(Wire1, encoders[i].address, 0x0C, 2) / 4096.0 * 360.0);
+      arm1_joint_angles[i-7] = mapAngle(encoders[i], rawAngle)*PI/180.0;
     }
 
     for(int i = 0; i < 7; i++) {
-      arm2_joint_angles[i] = (readRegister(Wire2, ARM2[i], 0x0C, 2) / 4096.0) * TWO_PI;
+      rawAngle = (readRegister(Wire2, encoders[i].address, 0x0C, 2) / 4096.0 * 360.0);
+      arm2_joint_angles[i] = mapAngle(encoders[i], rawAngle)*PI/180.0;
     }
-
-
 
     // Send ARM1 angles back over serial
     memset(buffer, 0, 200);
-    strncat(buffer, "SA,", 3);
+    // strncat(buffer, "SA,", 3);
     for(int i = 0; i < 7; i++) {
-      sprintf(buffer + strlen(buffer), "%f,", arm1_joint_angles[i]);
+      sprintf(buffer + strlen(buffer), "%6.2f,", arm1_joint_angles[i]);
     }
-    strncat(buffer, "EA", 2);
-
-    Serial.println(buffer);
-
-
+    // strncat(buffer, "EA", 2);
 
     // Send ARM2 angles back over serial
-    memset(buffer, 0, 200);
-    strncat(buffer, "SB,", 4);
+    // memset(buffer, 0, 600);
+    // strncat(buffer, "SB,", 4);
     for(int i = 0; i < 7; i++) {
-      sprintf(buffer + strlen(buffer), "%f,", arm2_joint_angles[i]);
+      if(i==6){
+        sprintf(buffer + strlen(buffer), "%6.2f", arm2_joint_angles[i]);
+      }
+      else{
+        sprintf(buffer + strlen(buffer), "%6.2f,", arm2_joint_angles[i]);
+      }
     }
-    strncat(buffer, "EB", 2);
+    // strncat(buffer, "EB", 2);
 
     Serial.println(buffer);
 
@@ -414,7 +436,8 @@ void loop()
       counter++;
     }
 
-
-    // tftPrintTest();
-    delay(100);
+    delayMicroseconds(UPDATE_RATE - (micros() - startTime));
+    // float frequency = 1000000/(micros() - startTime);
+    // Serial.print("F = ");
+    // Serial.println(frequency);
 }

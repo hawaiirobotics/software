@@ -53,12 +53,12 @@
 // J5 0x45
 // J6 0x44
 // J7 0x46
-const uint8_t ARM1[] = {0x40, 0x41, 0x43, 0x42, 0x45, 0x44, 0x46};
+// const uint8_t ARM1[] = {0x40, 0x41, 0x43, 0x42, 0x45, 0x44, 0x46};
 // -------I2C Bus 2-----
 // Honolulu Extender Addr 77h
 // Teacher Arm Extender Addr 76h
 // Encoder Addresses TBD update this
-const uint8_t ARM2[] = {0x40, 0x41, 0x43, 0x42, 0x45, 0x44, 0x46};
+// const uint8_t ARM2[] = {0x40, 0x41, 0x43, 0x42, 0x45, 0x44, 0x46};
 
 struct EncoderSettings {
   float minAngleOut;
@@ -125,14 +125,6 @@ Adafruit_NeoPixel strip = Adafruit_NeoPixel(NUM_LEDS, LIGHTING, NEO_GRB + NEO_KH
 
 const float p = 3.1415926;
 
-
-void testdrawtext(char *text, uint16_t color) {
-  tft.setCursor(0, 0);
-  tft.setTextColor(color);
-  tft.setTextWrap(true);
-  tft.print(text);
-}
-
 int readRegister(TwoWire w, int chip_addr, int reg_addr, int length) {
     int result = 0;
     
@@ -146,30 +138,6 @@ int readRegister(TwoWire w, int chip_addr, int reg_addr, int length) {
     }
 
     return result;
-}
-
-int readRawAngle(TwoWire w, uint8_t i2cAddress) {
-  int highByte, lowByte, rawAngle;
-  w.beginTransmission(i2cAddress);
-  w.write(0x0C);
-  w.endTransmission(false);
-  w.requestFrom(i2cAddress, 1);
-  if (w.available() == 1) {
-    highByte = w.read();
-  } else {
-    return -1;
-  }
-  w.beginTransmission(i2cAddress);
-  w.write(0x0D);
-  w.endTransmission(false);
-  w.requestFrom(i2cAddress, 1);
-  if (w.available() == 1) {
-    lowByte = w.read();
-  } else {
-    return -1;
-  }
-  rawAngle = (highByte << 8) | lowByte;
-  return rawAngle;
 }
 
 float mapAngle(EncoderSettings& encoder, float newAngle) {
@@ -212,70 +180,20 @@ float mapAngle(EncoderSettings& encoder, float newAngle) {
   }
 }
 
-void tftPrintTest() {
-  tft.setTextWrap(false);
-  tft.fillScreen(ST77XX_BLACK);
-  tft.setCursor(0, 0);
-  tft.setTextColor(ST77XX_RED);
-  tft.setTextSize(1);
-  tft.println("Hello World!");
-  tft.setTextColor(ST77XX_YELLOW);
-  tft.setTextSize(2);
-  tft.println("Hello World!");
-  tft.setTextColor(ST77XX_GREEN);
-  tft.setTextSize(3);
-  tft.println("Hello World!");
-  tft.setTextColor(ST77XX_BLUE);
-  tft.setTextSize(4);
-  tft.print(1234.567);
-  delay(1500);
-  tft.setCursor(0, 0);
-  tft.fillScreen(ST77XX_BLACK);
-  tft.setTextColor(ST77XX_WHITE);
-  tft.setTextSize(0);
-  tft.println("Hello World!");
-  tft.setTextSize(1);
-  tft.setTextColor(ST77XX_GREEN);
-  tft.print(p, 6);
-  tft.println(" Want pi?");
-  tft.println(" ");
-  tft.print(8675309, HEX); // print 8,675,309 out in HEX!
-  tft.println(" Print HEX!");
-  tft.println(" ");
-  tft.setTextColor(ST77XX_WHITE);
-  tft.println("Sketch has been");
-  tft.println("running for: ");
-  tft.setTextColor(ST77XX_MAGENTA);
-  tft.print(millis() / 1000);
-  tft.setTextColor(ST77XX_WHITE);
-  tft.print(" seconds.");
-}
-
 void setup()
 {
 
   //-------TFT-------
-  // tft.init(135, 240); // Init ST7789 240x135
+  tft.init(135, 240); // Init ST7789 240x135
 
   // tft rotation
-  // tft.setRotation(3);
-
-  // tft.fillScreen(ST77XX_BLACK);
-  // delay(500);
-
-  // large block of text
-  // tft.fillScreen(ST77XX_BLACK);
-  // testdrawtext("Lorem ipsum dolor sit amet, consectetur adipiscing elit. Curabitur adipiscing ante sed nibh tincidunt feugiat. Maecenas enim massa, fringilla sed malesuada et, malesuada sit amet turpis. Sed porttitor neque ut ante pretium vitae malesuada nunc bibendum. Nullam aliquet ultrices massa eu hendrerit. Ut sed nisi lorem. In vestibulum purus a tortor imperdiet posuere. ", ST77XX_WHITE);
-  // delay(1000);
-
-  // tftPrintTest();
-  // delay(1000);
+  tft.setRotation(3);
 
   //-------I2C-------
   // Current Sense
   // 18 SDA
   // 19 SCL
-  // Wire.begin();
+  Wire.begin();
 
   // Teacher Arm 1
   // 17 SDA
@@ -287,96 +205,96 @@ void setup()
   // 25 SDA
   // 24 SCL
   Wire2.begin();
-  Wire2.setClock( 400000UL );
+  Wire2.setClock(400000UL);
 
-  // //-------FUSE GPIO--------
-  // // Right Arm EFuse
-  // pinMode(RA_FUSE_OC, INPUT);
-  // pinMode(RA_FUSE_GOK, INPUT);
-  // pinMode(RA_FUSE_EN, OUTPUT);
-  // digitalWrite(RA_FUSE_EN, HIGH);
+  //-------FUSE GPIO--------
+  // Right Arm EFuse
+  pinMode(RA_FUSE_OC, INPUT);
+  pinMode(RA_FUSE_GOK, INPUT);
+  pinMode(RA_FUSE_EN, OUTPUT);
+  digitalWrite(RA_FUSE_EN, HIGH);
 
-  // // Left Arm EFuse
-  // pinMode(LA_FUSE_OC, INPUT);
-  // pinMode(LA_FUSE_GOK, INPUT);
-  // pinMode(LA_FUSE_EN, OUTPUT);
-  // digitalWrite(LA_FUSE_EN, HIGH);
+  // Left Arm EFuse
+  pinMode(LA_FUSE_OC, INPUT);
+  pinMode(LA_FUSE_GOK, INPUT);
+  pinMode(LA_FUSE_EN, OUTPUT);
+  digitalWrite(LA_FUSE_EN, HIGH);
 
-  // // 5V Regulator EFuse
-  // pinMode(FIVE_V_FUSE_OC, INPUT);
-  // pinMode(FIVE_V_FUSE_GOK, INPUT);
-  // pinMode(FIVE_V_FUSE_EN, OUTPUT);
-  // digitalWrite(FIVE_V_FUSE_EN, HIGH);
-
-
-  // //-----CURRENT SENSE CONFIGURATION-----
-  // // Teacher Arm Current Sense Config
-  // Wire.beginTransmission(0x40); // Chip addr
-  // // 16V FSR 0
-  // // PGA /4 10
-  // // 4 sample averaging (2.13ms) 1010
-  // // shunt and bus continuous 111
-  // // 0001 0101 0101 0111
-  // char curr_sns_cfg1 [3] = {0x00, 0x15, 0x57};
-  // Wire.write(curr_sns_cfg1, 3); // Reg addr
-  // Wire.endTransmission();
-
-  // // Lighting Current Sense Config
-  // Wire.beginTransmission(0x44); // Chip addr
-  // // 16V FSR 0
-  // // PGA /4 10
-  // // 4 sample averaging (2.13ms) 1010
-  // // shunt and bus continuous 111
-  // // 0001 0101 0101 0111
-  // Wire.write(curr_sns_cfg1, 3); // Reg addr
-  // Wire.endTransmission();
-
-  // // 3v3 Current Sense Config
-  // Wire.beginTransmission(0x41); // Chip addr
-  // // 16V FSR 0
-  // // PGA /2 01
-  // // 4 sample averaging (2.13ms) 1010
-  // // shunt and bus continuous 111
-  // // 0000 1101 0101 0111
-  // char curr_sns_cfg2 [3] = {0x00, 0x0D, 0x57};
-  // Wire.write(curr_sns_cfg2, 3); // Reg addr
-  // Wire.endTransmission();
-
-  // // 5v Current Sense Config
-  // Wire.beginTransmission(0x45); // Chip addr
-  // // 16V FSR 0
-  // // PGA /4 10
-  // // 4 sample averaging (2.13ms) 1010
-  // // shunt and bus continuous 111
-  // // 0000 1101 0101 0111
-  // Wire.write(curr_sns_cfg1, 3); // Reg addr
-  // Wire.endTransmission();
+  // 5V Regulator EFuse
+  pinMode(FIVE_V_FUSE_OC, INPUT);
+  pinMode(FIVE_V_FUSE_GOK, INPUT);
+  pinMode(FIVE_V_FUSE_EN, OUTPUT);
+  digitalWrite(FIVE_V_FUSE_EN, HIGH);
 
 
+  //-----CURRENT SENSE CONFIGURATION-----
+  // Teacher Arm Current Sense Config
+  Wire.beginTransmission(0x40); // Chip addr
+  // 16V FSR 0
+  // PGA /4 10
+  // 4 sample averaging (2.13ms) 1010
+  // shunt and bus continuous 111
+  // 0001 0101 0101 0111
+  char curr_sns_cfg1 [3] = {0x00, 0x15, 0x57};
+  Wire.write(curr_sns_cfg1, 3); // Reg addr
+  Wire.endTransmission();
 
-  // //-----CURRENT SENSE CALIBRATION-----
-  // // Teacher Arm Current Sense Calibration
-  // Wire.beginTransmission(0x40); // Chip addr
-  // char curr_sns_cal1 [3] = {0x05, 0x20, 0xC4};
-  // Wire.write(curr_sns_cal1, 3); // Reg addr
-  // Wire.endTransmission();
+  // Lighting Current Sense Config
+  Wire.beginTransmission(0x44); // Chip addr
+  // 16V FSR 0
+  // PGA /4 10
+  // 4 sample averaging (2.13ms) 1010
+  // shunt and bus continuous 111
+  // 0001 0101 0101 0111
+  Wire.write(curr_sns_cfg1, 3); // Reg addr
+  Wire.endTransmission();
 
-  // // Lighting Current Sense Calibration
-  // Wire.beginTransmission(0x44); // Chip addr
-  // char curr_sns_cal2 [3] = {0x05, 0x22, 0xF3};
-  // Wire.write(curr_sns_cal2, 3); // Reg addr
-  // Wire.endTransmission();
+  // 3v3 Current Sense Config
+  Wire.beginTransmission(0x41); // Chip addr
+  // 16V FSR 0
+  // PGA /2 01
+  // 4 sample averaging (2.13ms) 1010
+  // shunt and bus continuous 111
+  // 0000 1101 0101 0111
+  char curr_sns_cfg2 [3] = {0x00, 0x0D, 0x57};
+  Wire.write(curr_sns_cfg2, 3); // Reg addr
+  Wire.endTransmission();
 
-  // // 3v3 Current Sense Calibration
-  // Wire.beginTransmission(0x41); // Chip addr
-  // char curr_sns_cal3 [3] ={0x05, 0x41, 0x89};
-  // Wire.write(curr_sns_cal3, 3); // Reg addr
-  // Wire.endTransmission();
+  // 5v Current Sense Config
+  Wire.beginTransmission(0x45); // Chip addr
+  // 16V FSR 0
+  // PGA /4 10
+  // 4 sample averaging (2.13ms) 1010
+  // shunt and bus continuous 111
+  // 0000 1101 0101 0111
+  Wire.write(curr_sns_cfg1, 3); // Reg addr
+  Wire.endTransmission();
 
-  // // 5v Current Sense Calibration
-  // Wire.beginTransmission(0x45); // Chip addr
-  // Wire.write(curr_sns_cal2, 3); // Reg addr
-  // Wire.endTransmission();
+
+
+  //-----CURRENT SENSE CALIBRATION-----
+  // Teacher Arm Current Sense Calibration
+  Wire.beginTransmission(0x40); // Chip addr
+  char curr_sns_cal1 [3] = {0x05, 0x20, 0xC4};
+  Wire.write(curr_sns_cal1, 3); // Reg addr
+  Wire.endTransmission();
+
+  // Lighting Current Sense Calibration
+  Wire.beginTransmission(0x44); // Chip addr
+  char curr_sns_cal2 [3] = {0x05, 0x22, 0xF3};
+  Wire.write(curr_sns_cal2, 3); // Reg addr
+  Wire.endTransmission();
+
+  // 3v3 Current Sense Calibration
+  Wire.beginTransmission(0x41); // Chip addr
+  char curr_sns_cal3 [3] ={0x05, 0x41, 0x89};
+  Wire.write(curr_sns_cal3, 3); // Reg addr
+  Wire.endTransmission();
+
+  // 5v Current Sense Calibration
+  Wire.beginTransmission(0x45); // Chip addr
+  Wire.write(curr_sns_cal2, 3); // Reg addr
+  Wire.endTransmission();
 
   //setup serial
   Serial.begin(250000);
@@ -385,7 +303,7 @@ void setup()
 void loop()
 {
     static uint8_t counter = 0;
-    char buffer[600];
+    char buffer[200];
     //------FUSES------
     // Right Arm
     // Analog
@@ -426,28 +344,28 @@ void loop()
     
     //------CURRENT SENSE------
     // Read Teacher Arm Current
-    // int TA_C = readRegister(Wire, 0x40, 0x01, 2);
+    int TA_C = readRegister(Wire, 0x40, 0x01, 2);
 
     // // Read Teacher Arm Voltage
-    // int TA_V = readRegister(Wire, 0x40, 0x02, 2);
+    int TA_V = readRegister(Wire, 0x40, 0x02, 2);
 
     // // Lighting Current
-    // int L_C = readRegister(Wire, 0x44, 0x01, 2);
+    int L_C = readRegister(Wire, 0x44, 0x01, 2);
 
     // // Lighting Voltage
-    // int L_V = readRegister(Wire, 0x44, 0x02, 2);
+    int L_V = readRegister(Wire, 0x44, 0x02, 2);
 
     // // 3v3 Current
-    // int THREE_C = readRegister(Wire, 0x41, 0x01, 2);
+    int THREE_C = readRegister(Wire, 0x41, 0x01, 2);
 
     // // 3v3 Voltage
-    // int THREE_V = readRegister(Wire, 0x41, 0x02, 2);
+    int THREE_V = readRegister(Wire, 0x41, 0x02, 2);
 
     // // 5v Current
-    // int FIVE_C = readRegister(Wire, 0x45, 0x01, 2);
+    int FIVE_C = readRegister(Wire, 0x45, 0x01, 2);
 
     // // 5v Voltage
-    // int FIVE_V = readRegister(Wire, 0x45, 0x02, 2);
+    int FIVE_V = readRegister(Wire, 0x45, 0x02, 2);
 
     // char buffer[200];
     // sprintf(buffer, "TAC %d, TAV %d, LC %d, LV %d, 3v3C %d, 3v3V %d, 5vC %d, 5vV %d", TA_C, TA_V, L_C, L_V, THREE_C, THREE_V, FIVE_C, FIVE_V);
@@ -460,61 +378,54 @@ void loop()
     float rawAngle = 0.0;
 
     for(int i = 7; i < 14; i++) {
-      rawAngle = (readRawAngle(Wire1, encoders[i].address) / 4096.0 * 360.0 * 100.0) / 100.0;
+      rawAngle = (readRegister(Wire1, encoders[i].address, 0x0C, 2) / 4096.0 * 360.0);
       arm1_joint_angles[i-7] = mapAngle(encoders[i], rawAngle)*PI/180.0;
-      // Serial.println(rawAngle);
-      // Serial.print(',');
     }
 
     for(int i = 0; i < 7; i++) {
-      rawAngle = (readRawAngle(Wire2, encoders[i].address) / 4096.0 * 360.0 * 100.0) / 100.0;
+      rawAngle = (readRegister(Wire2, encoders[i].address, 0x0C, 2) / 4096.0 * 360.0);
       arm2_joint_angles[i] = mapAngle(encoders[i], rawAngle)*PI/180.0;
-      // Serial.println(rawAngle);
-      // Serial.print(',');
     }
-    // Serial.println();
 
     // Send ARM1 angles back over serial
-    memset(buffer, 0, 600);
+    memset(buffer, 0, 200);
     // strncat(buffer, "SA,", 3);
     for(int i = 0; i < 7; i++) {
-      sprintf(buffer + strlen(buffer), "%f,", arm1_joint_angles[i]);
+      sprintf(buffer + strlen(buffer), "%6.2f,", arm1_joint_angles[i]);
     }
     // strncat(buffer, "EA", 2);
 
     // Send ARM2 angles back over serial
-    // memset(buffer, 0, 200);
+    // memset(buffer, 0, 600);
     // strncat(buffer, "SB,", 4);
     for(int i = 0; i < 7; i++) {
       if(i==6){
-        sprintf(buffer + strlen(buffer), "%f", arm2_joint_angles[i]);
+        sprintf(buffer + strlen(buffer), "%6.2f", arm2_joint_angles[i]);
       }
       else{
-        sprintf(buffer + strlen(buffer), "%f,", arm2_joint_angles[i]);
+        sprintf(buffer + strlen(buffer), "%6.2f,", arm2_joint_angles[i]);
       }
     }
     // strncat(buffer, "EB", 2);
 
     Serial.println(buffer);
 
-    // if(counter == 5){
-    //   counter = 0;
+    if(counter == 5){
+      counter = 0;
 
-    //   tft.setTextWrap(true);
-    //   tft.setCursor(0, 0);
-    //   // tft.fillScreen(ST77XX_BLACK);
-    //   tft.setTextColor(ST77XX_WHITE);
-    //   tft.setTextSize(2);
+      tft.setTextWrap(true);
+      tft.setCursor(0, 0);
+      // tft.fillScreen(ST77XX_BLACK);
+      tft.setTextColor(ST77XX_WHITE);
+      tft.setTextSize(2);
 
-    //   memset(buffer, 0, 200);
-    //   sprintf(buffer, "TAC %4.2f, TAV %4.2f\nLC %4.2f, LV %4.2f\n3v3C %4.2f, 3v3V %4.2f\n5vC %4.2f, 5vV %4.2f", TA_C, TA_V, L_C, L_V, THREE_C, THREE_V, FIVE_C, FIVE_V);
+      memset(buffer, 0, 200);
+      sprintf(buffer, "TAC %4.2f, TAV %4.2f\nLC %4.2f, LV %4.2f\n3v3C %4.2f, 3v3V %4.2f\n5vC %4.2f, 5vV %4.2f", TA_C, TA_V, L_C, L_V, THREE_C, THREE_V, FIVE_C, FIVE_V);
 
-    //   tft.print(buffer);
-    // } else {
-    //   counter++;
-    // }
+      tft.print(buffer);
+    } else {
+      counter++;
+    }
 
-
-    // tftPrintTest();
     // delay(1000/25);
 }
