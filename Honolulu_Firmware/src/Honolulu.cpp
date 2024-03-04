@@ -78,17 +78,17 @@ EncoderSettings encoders[14] = {
 { -90.0, 67.2, -153.0, -1, 0x41,  361, 0, 13.89},
 { 6.0, 175.0, -299.0, -1, 0x43,   361, 0, 27.77},
 { -180.0, 180.0, -33.0, -1, 0x42, 361, 0, 0},
-{ 0.0, 180.0, -180.0, -1, 0x45,   361, 0, -13.89},
+{ 0.0, 180.0, -180.0, 1, 0x45,   361, 0, -13.89},
 { -180.0, 180.0, -138.8, 1, 0x44, 361, 0, 0},
-{ -144.0, 180.0, -243.46, 1, 0x46, 361, 0, 60},
+{ -144.0, 180.0, -243.46, 1, 0x46, 361, 0, 0},
 // arm 2
 { -90.0, 90.0, -332.23, 1, 0x40,    361, 0, 0},
 { -90.0, 67.2, -258.5, -1, 0x41,  361, 0, 13.89},
 { 6.0, 175.0, -280.63, -1, 0x43,   361, 0, 27.77},
 { -180.0, 180.0, -26.9, -1, 0x42, 361, 0, 0},
-{ 0.0, 180.0, -256.03, -1, 0x45,   361, 0, -13.89},
+{ 0.0, 180.0, -256.03, 1, 0x45,   361, 0, -13.89},
 { -180.0, 180.0, -63.11, 1, 0x44, 361, 0, 0},
-{ -144.0, 180.0, -161.54, -1, 0x46, 361, 0, 60},
+{ -144.0, 180.0, -161.54, 1, 0x46, 361, 0, 0},
 };
 
 
@@ -149,7 +149,7 @@ int FIVE_V_FUSE_EN = 9;
 Adafruit_ST7789 tft = Adafruit_ST7789(TFT_CS, TFT_DC, TFT_RST);
 
 // TP34 reset button
-#define RESET_BTN A7
+#define RESET_BTN A8
 
 #define LIGHTING 5
 #define NUM_LEDS 10
@@ -205,7 +205,7 @@ float mapAngle(EncoderSettings& encoder, float newAngle) {
 
   float convert = 0.0;
   if (encoder.address == 0x46) { //gripper
-    convert = encoder.maxAngleOut + ((angle+encoder.offset) * encoder.scale * (encoder.minAngleOut - encoder.maxAngleOut)) / 58;
+    convert = encoder.maxAngleOut + ((angle+encoder.offset) * encoder.scale * (encoder.minAngleOut - encoder.maxAngleOut)) / 60;
   } else {
     convert = (angle + encoder.offset)*encoder.scale;
   }
@@ -227,8 +227,8 @@ void update_offset() {
       encoders[i].offset = encoders[i].home_position - rawAngle;
     }
 
-    for(int i = 0; i < 7; i++) {
-      rawAngle = (readRegister(Wire2, encoders[i].address, 0x0C, 2) / 4096.0 * 360.0);
+    for(int i = 7; i < 14; i++) {
+      rawAngle = (readRegister(Wire1, encoders[i].address, 0x0C, 2) / 4096.0 * 360.0);
       encoders[i].offset = encoders[i].home_position - rawAngle;
     }
 }
@@ -374,14 +374,18 @@ void loop()
     static uint8_t reset_debounce = 0;
 
     // update the offsets when the reset button is held for 1s
-    if(RESET_BTN >= 60) {
+    if(reset_debounce >= 60) {
+      Serial.println("REGARDS");
+      // exit(1);
       update_offset();
       reset_debounce = 0;
-    } else if(!digitalRead(RESET_BTN)) {
+    } else if(digitalRead(RESET_BTN) == LOW ) {
       reset_debounce++;
     } else {
-      reset_debounce--;
+      reset_debounce = 0;
     }
+
+    // print_offsets();
 
     static uint8_t counter = 0;
     char buffer[200];
@@ -479,14 +483,14 @@ void loop()
 
     float rawAngle = 0.0;
 
-    for(int i = 7; i < 14; i++) {
-      rawAngle = (readRegister(Wire1, encoders[i].address, 0x0C, 2) / 4096.0 * 360.0);
-      arm1_joint_angles[i-7] = mapAngle(encoders[i], rawAngle)*PI/180.0;
-    }
-
     for(int i = 0; i < 7; i++) {
       rawAngle = (readRegister(Wire2, encoders[i].address, 0x0C, 2) / 4096.0 * 360.0);
-      arm2_joint_angles[i] = mapAngle(encoders[i], rawAngle)*PI/180.0;
+      arm1_joint_angles[i] = mapAngle(encoders[i], rawAngle)*PI/180.0;
+    }
+
+    for(int i = 7; i < 14; i++) {
+      rawAngle = (readRegister(Wire1, encoders[i].address, 0x0C, 2) / 4096.0 * 360.0);
+      arm2_joint_angles[i-7] = mapAngle(encoders[i], rawAngle)*PI/180.0;
     }
 
     // Send ARM1 angles back over serial
