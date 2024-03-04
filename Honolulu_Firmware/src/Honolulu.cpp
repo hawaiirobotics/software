@@ -162,15 +162,6 @@ const float p = 3.1415926;
 // update period in microseconds
 #define UPDATE_RATE 1000000/UPDATE_FREQ
 
-        // Read Teacher Arm Voltage
-    // Wire.beginTransmission(0x40); // Chip addr
-    // Wire.write(0x02); // Reg addr
-    // Wire.endTransmission();
-    // Wire.requestFrom(0x40, 2);
-    // int TA_V = 0;
-    // while(Wire.available()) {
-    //   TA_V = (TA_V << 8) + Wire.read();
-    // }
 
 int readRegister(TwoWire w, int chip_addr, int reg_addr, int length) {
     int result = 0;
@@ -233,12 +224,12 @@ void update_offset() {
 
     for(int i = 0; i < 7; i++) {
       rawAngle = (readRegister(Wire2, encoders[i].address, 0x0C, 2) / 4096.0 * 360.0);
-      encoders[i].offset = rawAngle - encoders[i].home_position;
+      encoders[i].offset = encoders[i].home_position - rawAngle;
     }
 
     for(int i = 0; i < 7; i++) {
       rawAngle = (readRegister(Wire2, encoders[i].address, 0x0C, 2) / 4096.0 * 360.0);
-      encoders[i].offset = rawAngle - encoders[i].home_position;
+      encoders[i].offset = encoders[i].home_position - rawAngle;
     }
 }
 
