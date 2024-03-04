@@ -68,26 +68,56 @@ struct EncoderSettings {
   uint8_t address;
   float lastAngle;
   float continuousAngle;
+  float home_position;
 };
 
+// 0, 13.89, 27.77, 0, -13.89, 0,
 EncoderSettings encoders[14] = {
 // arm 1
-{ -90.0, 90.0, -238.18, 1, 0x40,    361, 0},
-{ -90.0, 67.2, -153.0, -1, 0x41,  361, 0},
-{ 6.0, 175.0, -299.0, -1, 0x43,   361, 0},
-{ -180.0, 180.0, -33.0, -1, 0x42, 361, 0},
-{ 0.0, 180.0, -180.0, -1, 0x45,   361, 0},
-{ -180.0, 180.0, -138.8, 1, 0x44, 361, 0},
-{ -144.0, 180.0, -243.46, 1, 0x46, 361, 0},
+{ -90.0, 90.0, -238.18, 1, 0x40,    361, 0, 0},
+{ -90.0, 67.2, -153.0, -1, 0x41,  361, 0, 13.89},
+{ 6.0, 175.0, -299.0, -1, 0x43,   361, 0, 27.77},
+{ -180.0, 180.0, -33.0, -1, 0x42, 361, 0, 0},
+{ 0.0, 180.0, -180.0, -1, 0x45,   361, 0, -13.89},
+{ -180.0, 180.0, -138.8, 1, 0x44, 361, 0, 0},
+{ -144.0, 180.0, -243.46, 1, 0x46, 361, 0, 60},
 // arm 2
-{ -90.0, 90.0, -332.23, 1, 0x40,    361, 0},
-{ -90.0, 67.2, -258.5, -1, 0x41,  361, 0},
-{ 6.0, 175.0, -280.63, -1, 0x43,   361, 0},
-{ -180.0, 180.0, -26.9, -1, 0x42, 361, 0},
-{ 0.0, 180.0, -256.03, -1, 0x45,   361, 0},
-{ -180.0, 180.0, -63.11, 1, 0x44, 361, 0},
-{ -144.0, 180.0, -161.54, -1, 0x46, 361, 0},
+{ -90.0, 90.0, -332.23, 1, 0x40,    361, 0, 0},
+{ -90.0, 67.2, -258.5, -1, 0x41,  361, 0, 13.89},
+{ 6.0, 175.0, -280.63, -1, 0x43,   361, 0, 27.77},
+{ -180.0, 180.0, -26.9, -1, 0x42, 361, 0, 0},
+{ 0.0, 180.0, -256.03, -1, 0x45,   361, 0, -13.89},
+{ -180.0, 180.0, -63.11, 1, 0x44, 361, 0, 0},
+{ -144.0, 180.0, -161.54, -1, 0x46, 361, 0, 60},
 };
+
+
+// 0, 13.89, 27.77, 0, -13.89, 0,
+// EncoderSettings encoders[14] = {
+// // arm 1
+// { -90.0, 90.0, -238.18, 1, 0x40,    361, 0},
+// { -90.0, 67.2, -153.0, -1, 0x41,  361, 0},
+// { 6.0, 175.0, -299.0, -1, 0x43,   361, 0},
+// { -180.0, 180.0, -33.0, -1, 0x42, 361, 0},
+// { 0.0, 180.0, -180.0, -1, 0x45,   361, 0},
+// { -180.0, 180.0, -138.8, 1, 0x44, 361, 0},
+// { -144.0, 180.0, -243.46, 1, 0x46, 361, 0},
+// // arm 2
+// { -90.0, 90.0, -332.23, 1, 0x40,    361, 0},
+// { -90.0, 67.2, -258.5, -1, 0x41,  361, 0},
+// { 6.0, 175.0, -280.63, -1, 0x43,   361, 0},
+// { -180.0, 180.0, -26.9, -1, 0x42, 361, 0},
+// { 0.0, 180.0, -256.03, -1, 0x45,   361, 0},
+// { -180.0, 180.0, -63.11, 1, 0x44, 361, 0},
+// { -144.0, 180.0, -161.54, -1, 0x46, 361, 0},
+// };
+
+
+#define TA_C_LSB 30.518e-6
+#define L_C_LSB 183.11e-6
+#define THREE_C_LSB 15.259e-6
+#define FIVE_C_LSB 183.11e-6
+#define V_LSB 0.004
 
 int RA_FUSE_OC = 29;
 int RA_FUSE_GOK = 33;
@@ -118,6 +148,8 @@ int FIVE_V_FUSE_EN = 9;
 // Adafruit_ST7789 tft = Adafruit_ST7789(TFT_CS, TFT_DC, TFT_MOSI, TFT_SCLK, TFT_RST);
 Adafruit_ST7789 tft = Adafruit_ST7789(TFT_CS, TFT_DC, TFT_RST);
 
+// TP34 reset button
+#define RESET_BTN A7
 
 #define LIGHTING 5
 #define NUM_LEDS 10
@@ -130,6 +162,16 @@ const float p = 3.1415926;
 // update period in microseconds
 #define UPDATE_RATE 1000000/UPDATE_FREQ
 
+        // Read Teacher Arm Voltage
+    // Wire.beginTransmission(0x40); // Chip addr
+    // Wire.write(0x02); // Reg addr
+    // Wire.endTransmission();
+    // Wire.requestFrom(0x40, 2);
+    // int TA_V = 0;
+    // while(Wire.available()) {
+    //   TA_V = (TA_V << 8) + Wire.read();
+    // }
+
 int readRegister(TwoWire w, int chip_addr, int reg_addr, int length) {
     int result = 0;
     
@@ -138,7 +180,7 @@ int readRegister(TwoWire w, int chip_addr, int reg_addr, int length) {
     w.endTransmission();
     w.requestFrom(chip_addr, length);
 
-    if (w.available() == 1) {
+    while (w.available()) {
         result = (result << 8) + w.read();
     }
 
@@ -185,9 +227,36 @@ float mapAngle(EncoderSettings& encoder, float newAngle) {
   }
 }
 
+// update the offset for a new zero position
+void update_offset() {
+    float rawAngle;
+
+    for(int i = 0; i < 7; i++) {
+      rawAngle = (readRegister(Wire2, encoders[i].address, 0x0C, 2) / 4096.0 * 360.0);
+      encoders[i].offset = rawAngle - encoders[i].home_position;
+    }
+
+    for(int i = 0; i < 7; i++) {
+      rawAngle = (readRegister(Wire2, encoders[i].address, 0x0C, 2) / 4096.0 * 360.0);
+      encoders[i].offset = rawAngle - encoders[i].home_position;
+    }
+}
+
+// print offsets if the arms need to be permanently updated
+void print_offsets() {
+  char buffer[200];
+
+  strncat(buffer, "SO,", 3);
+  for(int i = 0; i < 14; i++) {
+    sprintf(buffer + strlen(buffer), "%6.2f,", encoders[i].offset);
+  }
+  strncat(buffer, "EO", 2);
+
+  Serial.println(buffer);
+}
+
 void setup()
 {
-
   //-------TFT-------
   tft.init(135, 240); // Init ST7789 240x135
 
@@ -195,6 +264,8 @@ void setup()
   tft.setRotation(3);
   tft.fillScreen(ST77XX_BLACK);
 
+  //---RESET BUTTON---
+  pinMode(RESET_BTN, INPUT_PULLUP);
 
   //-------I2C-------
   // Current Sense
@@ -277,8 +348,6 @@ void setup()
   Wire.write(curr_sns_cfg1, 3); // Reg addr
   Wire.endTransmission();
 
-
-
   //-----CURRENT SENSE CALIBRATION-----
   // Teacher Arm Current Sense Calibration
   Wire.beginTransmission(0x40); // Chip addr
@@ -310,6 +379,18 @@ void setup()
 void loop()
 {
     uint32_t startTime = micros(); // Record the start time
+
+    static uint8_t reset_debounce = 0;
+
+    // update the offsets when the reset button is held for 1s
+    if(RESET_BTN >= 60) {
+      update_offset();
+      reset_debounce = 0;
+    } else if(!digitalRead(RESET_BTN)) {
+      reset_debounce++;
+    } else {
+      reset_debounce--;
+    }
 
     static uint8_t counter = 0;
     char buffer[200];
@@ -350,34 +431,55 @@ void loop()
     // Serial.print("5V Line GOK: ");
     // Serial.println(digitalRead(FIVE_V_FUSE_GOK));
 
-    
+        // Read Teacher Arm Voltage
+    // Wire.beginTransmission(0x40); // Chip addr
+    // Wire.write(0x02); // Reg addr
+    // Wire.endTransmission();
+    // Wire.requestFrom(0x40, 2);
+    // int TA_V = 0;
+    // while(Wire.available()) {
+    //   TA_V = (TA_V << 8) + Wire.read();
+    // }
+
+
     //------CURRENT SENSE------
     // Read Teacher Arm Current
-    int TA_C = readRegister(Wire, 0x40, 0x01, 2);
+    uint16_t RAW_TA_C = readRegister(Wire, 0x40, 0x04, 2);
+    float TA_C = RAW_TA_C * TA_C_LSB;
 
-    // // Read Teacher Arm Voltage
-    int TA_V = readRegister(Wire, 0x40, 0x02, 2);
+    // Read Teacher Arm Voltage
+    uint16_t RAW_TA_V = readRegister(Wire, 0x40, 0x02, 2) >> 3;
+    float TA_V = RAW_TA_V * V_LSB;
 
-    // // Lighting Current
-    int L_C = readRegister(Wire, 0x44, 0x01, 2);
+    // Lighting Current
+    // LSB 183.11e-6
+    uint16_t RAW_L_C = readRegister(Wire, 0x44, 0x04, 2);
+    float L_C = RAW_L_C * L_C_LSB;
 
-    // // Lighting Voltage
-    int L_V = readRegister(Wire, 0x44, 0x02, 2);
+    // Lighting Voltage
+    uint16_t RAW_L_V = readRegister(Wire, 0x44, 0x02, 2) >> 3;
+    float L_V = RAW_L_V * V_LSB;
 
-    // // 3v3 Current
-    int THREE_C = readRegister(Wire, 0x41, 0x01, 2);
+    // 3v3 Current
+    // LSB 15.259e-6
+    uint16_t RAW_THREE_C = readRegister(Wire, 0x41, 0x04, 2);
+    float THREE_C = RAW_THREE_C * THREE_C_LSB;
 
-    // // 3v3 Voltage
-    int THREE_V = readRegister(Wire, 0x41, 0x02, 2);
+    // 3v3 Voltage
+    uint16_t RAW_THREE_V = readRegister(Wire, 0x41, 0x02, 2) >> 3;
+    float THREE_V = RAW_THREE_V * V_LSB;
 
-    // // 5v Current
-    int FIVE_C = readRegister(Wire, 0x45, 0x01, 2);
+    // 5v Current
+    // LSB 183.11e-6
+    uint16_t RAW_FIVE_C = readRegister(Wire, 0x45, 0x04, 2);
+    float FIVE_C = RAW_FIVE_C * FIVE_C_LSB;
 
-    // // 5v Voltage
-    int FIVE_V = readRegister(Wire, 0x45, 0x02, 2);
+    // 5v Voltage
+    uint16_t RAW_FIVE_V = readRegister(Wire, 0x45, 0x02, 2) >> 3;
+    float FIVE_V = RAW_FIVE_V * V_LSB;
 
-    // char buffer[200];
-    // sprintf(buffer, "TAC %d, TAV %d, LC %d, LV %d, 3v3C %d, 3v3V %d, 5vC %d, 5vV %d", TA_C, TA_V, L_C, L_V, THREE_C, THREE_V, FIVE_C, FIVE_V);
+    // memset(buffer, 0, 200);
+    // sprintf(buffer, "TAC %f, TAV %d, LC %f, LV %f, 3v3C %f, 3v3V %f, 5vC %f, 5vV %f", TA_C, RAW_TA_V, L_C, L_V, THREE_C, THREE_V, FIVE_C, FIVE_V);
     // Serial.println(buffer);
 
     //--------TEACHER ARM JOINT ANGLES-------
@@ -425,6 +527,7 @@ void loop()
       tft.setTextWrap(true);
       tft.setCursor(0, 0);
       // tft.fillScreen(ST77XX_BLACK);
+      // tft.setTextColor(ST77XX_WHITE, ST77XX_BLACK);
       tft.setTextColor(ST77XX_WHITE);
       tft.setTextSize(2);
 
