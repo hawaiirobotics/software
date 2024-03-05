@@ -10,7 +10,7 @@ import threading
 import queue
 
 from real_env import make_real_env
-from teleop_utils import move_grippers, move_arms, setup_student_bot, get_arm_gripper_positions
+from teleop_utils import move_grippers, move_arms, setup_student_bot, get_arm_gripper_positions, get_arm_joint_positions
 from teleop_utils import DT, STUDENT_GRIPPER_JOINT_OPEN, STUDENT_GRIPPER_JOINT_CLOSE
 
 # Create a shared queue
@@ -55,39 +55,9 @@ def read_from_serial(serial_port, data_queue):
     except (KeyboardInterrupt, serial.SerialException):
         print("\nKeyboard interrupt received, closing serial port.")
         serial_port.close()
-    # while True:
-        
-    #         # Read a line from the serial port
-    #         line = serial_port.readline().decode('utf-8').strip()
-
-    #         # Process the received message
-    #         if line:
-    #             print("Received:", line)
-    #             data_queue.put(line)
-    #     except serial.SerialException as e:
-    #         print("Error reading serial:", e)
-    #         exit(1)
+        exit(1)
 
 def get_joint_states():
-    # global increasing
-    # global value
-    # global increment
-    # # right_states = np.zeros(7) # 6 joint + 1 gripper, for two arms
-    # # left_states = np.zeros(7) # 6 joint + 1 gripper, for two arms
-    # # Arm actions
-    # # will come from serial, and will need to apply offset to convert encoder values to robot values
-    # if increasing:
-    #     value += increment
-    # else:
-    #     value -= increment
-    # if value >= 3.1:  
-    #     increasing = False
-    # elif value <=0:
-    #     increasing = True
-
-    # right_states = [0,0,0,0,0,0,value]
-    # left_states = [value]*7
-
     return data_queue.get()
 
 def setup_student_arms(student_left, student_right):
@@ -97,14 +67,21 @@ def setup_student_arms(student_left, student_right):
 
     # move student arms to teacher arm position
     start_arm_qpos = get_joint_states()
-    print(start_arm_qpos[:6])
+    print(start_arm_qpos)
+
+    start_left_teacher_pos = get_arm_joint_positions(student_left)
+    start_right_teacher_pos = get_arm_joint_positions(student_right)
+    print("current left arm pos: ", start_left_teacher_pos)
+    print("current right arm pos: ", start_right_teacher_pos)
+    start_left_teacher_pos[1] = 0.0 # set joint 2 to zero position
+    start_right_teacher_pos[1] = 0.0
+    # exit(1)
+
+    move_arms([student_left, student_right], [start_left_teacher_pos,start_right_teacher_pos] , move_time=5)
     move_arms([student_left, student_right], [start_arm_qpos[:6],start_arm_qpos[7:-1]] , move_time=10)
-    # move_arms([student_right], [start_arm_qpos[:6]] , move_time=10)
     print("done moving to zero")
-    # exit(0)
     # move grippers to starting position
     move_grippers([student_left, student_right], [STUDENT_GRIPPER_JOINT_OPEN, STUDENT_GRIPPER_JOINT_OPEN], move_time=1.5)
-    # move_grippers([student_right], [STUDENT_GRIPPER_JOINT_OPEN] , move_time=1.5)
     print("done moving gripper to home")
     
 
@@ -244,7 +221,7 @@ if __name__=='__main__':
     os.nice(1)
 
     overwrite = True
-    max_timesteps= 1000
+    max_timesteps= 10000
     dataset_name = "testing"
     dataset_dir = "testing"
     camera_names= ['cam_high']#, 'cam_low', 'cam_left_wrist', 'cam_right_wrist']

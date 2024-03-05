@@ -1,4 +1,4 @@
-port: /dev/ttyUSB0
+port: /dev/ttyUSB1
 
 groups:
   arm:
