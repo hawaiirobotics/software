@@ -78,17 +78,17 @@ EncoderSettings encoders[14] = {
 { -90.0, 67.2, -153.0, -1, 0x41,  361, 0, 13.89},
 { 6.0, 175.0, -299.0, -1, 0x43,   361, 0, -27.77},
 { -180.0, 180.0, -33.0, -1, 0x42, 361, 0, 0},
-{ 0.0, 180.0, -180.0, 1, 0x45,   361, 0, -13.89},
+{ 0.0, 180.0, -180.0, 1, 0x45,   361, 0, 13.89},
 { -180.0, 180.0, -138.8, 1, 0x44, 361, 0, 0},
-{ -144.0, 180.0, -243.46, 1, 0x46, 361, 0, 0},
+{ -140.4, 157.0, -204.35, 53.87, 0x46, 361, 0, 0}, // scale is the range of the teacher arm gripper
 // arm 2
 { -90.0, 90.0, -332.23, 1, 0x40,    361, 0, 0},
 { -90.0, 67.2, -258.5, -1, 0x41,  361, 0, 13.89},
 { 6.0, 175.0, -280.63, -1, 0x43,   361, 0, -27.77},
 { -180.0, 180.0, -26.9, -1, 0x42, 361, 0, 0},
-{ 0.0, 180.0, -256.03, 1, 0x45,   361, 0, -13.89},
+{ 0.0, 180.0, -256.03, 1, 0x45,   361, 0, 13.89},
 { -180.0, 180.0, -63.11, 1, 0x44, 361, 0, 0},
-{ -144.0, 180.0, -161.54, 1, 0x46, 361, 0, 0},
+{ -140.4, 157.0, -86.57, 52, 0x46, 361, 0, 0}, // scale is the range of the teacher arm gripper
 };
 
 
@@ -205,7 +205,7 @@ float mapAngle(EncoderSettings& encoder, float newAngle) {
 
   float convert = 0.0;
   if (encoder.address == 0x46) { //gripper
-    convert = encoder.maxAngleOut + ((angle+encoder.offset) * encoder.scale * (encoder.minAngleOut - encoder.maxAngleOut)) / 60;
+    convert = encoder.maxAngleOut + ((angle+encoder.offset) * (encoder.minAngleOut - encoder.maxAngleOut)) / encoder.scale;
   } else {
     convert = (angle + encoder.offset)*encoder.scale;
   }
@@ -222,12 +222,14 @@ float mapAngle(EncoderSettings& encoder, float newAngle) {
 void update_offset() {
     float rawAngle;
 
-    for(int i = 0; i < 7; i++) {
+    // no need to update gripper offsets
+
+    for(int i = 0; i < 6; i++) {
       rawAngle = (readRegister(Wire2, encoders[i].address, 0x0C, 2) / 4096.0 * 360.0);
       encoders[i].offset = encoders[i].home_position - rawAngle;
     }
 
-    for(int i = 7; i < 14; i++) {
+    for(int i = 7; i < 13; i++) {
       rawAngle = (readRegister(Wire1, encoders[i].address, 0x0C, 2) / 4096.0 * 360.0);
       encoders[i].offset = encoders[i].home_position - rawAngle;
     }
@@ -490,7 +492,7 @@ void loop()
 
     for(int i = 7; i < 14; i++) {
       rawAngle = (readRegister(Wire1, encoders[i].address, 0x0C, 2) / 4096.0 * 360.0);
-      arm2_joint_angles[i-7] = mapAngle(encoders[i], rawAngle)*PI/180.0; 
+      arm2_joint_angles[i-7] = mapAngle(encoders[i], rawAngle)*PI/180.0;
     }
 
     // Send ARM1 angles back over serial
