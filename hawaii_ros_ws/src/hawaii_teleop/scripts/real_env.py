@@ -32,8 +32,8 @@ class RealEnv:
     """
 
     def __init__(self):
-        self.student_right = InterbotixManipulatorXS(robot_model="Student_Arm", group_name="arm", gripper_name="gripper", robot_name=f'Student_Arm', init_node=True)
-        # self.student_left = InterbotixManipulatorXS(robot_model="Student_Arm", group_name="arm", gripper_name="gripper", robot_name=f'Student_Arm', init_node=False)
+        self.student_right = InterbotixManipulatorXS(robot_model="Student_Arm", group_name="arm", gripper_name="gripper", robot_name=f'student_right', init_node=True)
+        self.student_left = InterbotixManipulatorXS(robot_model="Student_Arm", group_name="arm", gripper_name="gripper", robot_name=f'student_left', init_node=False)
 
         #recorder not working with one side right now becuase it creates subscribers based off of the robot names (right or left)
         # self.recorder_left = Recorder('left', init_node=False)
@@ -68,12 +68,11 @@ class RealEnv:
     def set_gripper_pose(self, left_gripper_desired_pos_normalized, right_gripper_desired_pos_normalized):
         left_gripper_desired_joint = left_gripper_desired_pos_normalized
         self.gripper_command.cmd = left_gripper_desired_joint
-        # self.student_left.gripper.core.pub_single.publish(self.gripper_command)
+        self.student_left.gripper.core.pub_single.publish(self.gripper_command)
 
         right_gripper_desired_joint = right_gripper_desired_pos_normalized
         self.gripper_command.cmd = right_gripper_desired_joint
         self.student_right.gripper.core.pub_single.publish(self.gripper_command)
-        # self.student_right.gripper.set_gripper_position(right_gripper_desired_pos_normalized)
 
     def _reset_joints(self):
         reset_position = START_ARM_POSE[:6]
@@ -100,7 +99,7 @@ class RealEnv:
     def reset(self, fake=False):
         if not fake:
             # Reboot student robot gripper motors
-            # self.student_left.core.robot_reboot_motors("single", "gripper", True)
+            self.student_left.core.robot_reboot_motors("single", "gripper", True)
             self.student_right.core.robot_reboot_motors("single", "gripper", True)
             self._reset_joints()
             # self._reset_gripper()
@@ -111,9 +110,9 @@ class RealEnv:
             observation=self.get_observation())
 
     def step(self, action):
-        left_action = list(action[7:])
-        right_action = list(action[:7])
-        # self.student_left.arm.set_joint_positions(left_action[:6], blocking=False)
+        left_action = list(action[:7])
+        right_action = list(action[7:])
+        self.student_left.arm.set_joint_positions(left_action[:6], blocking=False)
         self.student_right.arm.set_joint_positions(right_action[:6], blocking=False)
         self.set_gripper_pose(left_action[-1], right_action[-1])
         # time.sleep(DT)

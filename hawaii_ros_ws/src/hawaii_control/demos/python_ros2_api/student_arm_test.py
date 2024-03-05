@@ -6,7 +6,7 @@ from interbotix_xs_modules.xs_robot.arm import InterbotixManipulatorXS
 import numpy as np
 
 def operateBotR(botR):
-    botR.arm.set_single_joint_position(joint_name='Joint1', position=np.pi/2, moving_time= 5, accel_time = 0.5)
+    botR.arm.set_single_joint_position(joint_name='Joint1', position=np.pi/2, moving_time= 5, accel_time = 0.5, blocking=False)
     # botR.arm.set_single_joint_position(joint_name='Joint2', position=0.728)
     # botR.arm.set_single_joint_position(joint_name='Joint4', position=np.pi/2.0)
     # botR.arm.set_single_joint_position(joint_name='Joint5', position=0.728)
@@ -50,7 +50,10 @@ def main():
         # set this to false to prevent initializing again
     )
 
-    operateBotR(botR)
+    # operateBotR(botR)
+    botR.arm.set_single_joint_position(joint_name='Joint1', position=np.pi/2, moving_time= 5, accel_time = 0.5, blocking=False)
+    botL.arm.set_single_joint_position(joint_name='Joint1', position=np.pi/2, moving_time= 5, accel_time = 0.5, blocking=False)
+    botR.arm.set_joint_positions([0.5, 0.5, 0.5, 0.5, 0.5, 0.5], blocking=False)
 
     # threadR = threading.Thread(target=operateBotR, args=(botR,))
     # threadL = threading.Thread(target=operateBotR, args=(botR,))

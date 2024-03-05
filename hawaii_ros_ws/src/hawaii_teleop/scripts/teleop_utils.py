@@ -4,7 +4,7 @@ import rclpy
 from rclpy.node import Node
 from interbotix_xs_msgs.msg import JointSingleCommand
 
-DT = 0.033
+DT = 0.02
 STUDENT_GRIPPER_JOINT_OPEN = 3.141592
 STUDENT_GRIPPER_JOINT_CLOSE = -2.4
 START_ARM_POSE = [0,0,0,0,0,0,0]
