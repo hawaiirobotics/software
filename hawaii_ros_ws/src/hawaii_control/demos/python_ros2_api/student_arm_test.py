@@ -51,9 +51,9 @@ def main():
     )
 
     # operateBotR(botR)
-    botR.arm.set_single_joint_position(joint_name='Joint1', position=np.pi/2, moving_time= 5, accel_time = 0.5, blocking=False)
-    botL.arm.set_single_joint_position(joint_name='Joint1', position=np.pi/2, moving_time= 5, accel_time = 0.5, blocking=False)
-    botR.arm.set_joint_positions([0.5, 0.5, 0.5, 0.5, 0.5, 0.5], blocking=False)
+    # botR.arm.set_single_joint_position(joint_name='Joint1', position=np.pi/2, moving_time= 5, accel_time = 0.5, blocking=False)
+    # botL.arm.set_single_joint_position(joint_name='Joint1', position=np.pi/2, moving_time= 5, accel_time = 0.5, blocking=False)
+    botR.arm.set_joint_positions_for_homing([-3.0, 0.5, 0.5, 0.5, 0.5, 0.5], blocking=False)
 
     # threadR = threading.Thread(target=operateBotR, args=(botR,))
     # threadL = threading.Thread(target=operateBotR, args=(botR,))

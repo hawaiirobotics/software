@@ -338,6 +338,39 @@ class InterbotixArmXSInterface:
             if speed_list[x] > self.group_info.joint_velocity_limits[x]:
                 return False
         return True
+    
+    def _check_joint_limits_homing(self, positions: List[float]) -> List[int]:
+        """
+        Ensure the desired arm group's joint positions are within their limits.
+
+        :param positions: the positions [rad] to check
+        :return: List with the index of the joints that violated their joint limits
+        """
+        self.core.get_logger().debug(f'Checking joint limits for {positions=}')
+        theta_list = [int(elem * 1000) / 1000.0 for elem in positions]
+        speed_list = [
+            abs(goal - current) / float(self.moving_time)
+            for goal, current in zip(theta_list, self.joint_commands)
+        ]
+
+        violated_joints = []
+        violated = False
+        # check position and velocity limits
+        for x in range(self.group_info.num_joints):
+            if not (
+                self.group_info.joint_lower_limits[x]
+                <= theta_list[x]
+                <= self.group_info.joint_upper_limits[x]
+            ):
+                print(f"Command {theta_list[x]:.2f} to joint {x+1} violates position limit.")
+                violated = True
+            if speed_list[x] > self.group_info.joint_velocity_limits[x]:
+                print(f"Command {theta_list[x]:.2f} to joint {x+1} violates speed limit.")
+                violated = True
+            if violated:
+                violated = False
+                violated_joints.append(x)
+        return violated_joints
 
     def _check_single_joint_limit(self, joint_name: str, position: float) -> bool:
         """
@@ -364,6 +397,31 @@ class InterbotixArmXSInterface:
         return True
 
     def set_joint_positions(
+            self,
+            joint_positions: List[float],
+            moving_time: float = None,
+            accel_time: float = None,
+            blocking: bool = True,
+        ) -> bool:
+        """
+        Command positions to the arm joints.
+
+        :param joint_positions: desired joint positions [rad]
+        :param moving_time: (optional) duration in seconds that the robot should move
+        :param accel_time: (optional) duration in seconds that that robot should spend
+            accelerating/decelerating (must be less than or equal to half the moving_time)
+        :param blocking: (optional) whether the function should wait to return control to the user
+            until the robot finishes moving
+        :return: `True` if position was commanded; `False` if it wasn't due to being outside limits
+        """
+        self.core.get_logger().debug(f'setting {joint_positions=}')
+        if self._check_joint_limits(joint_positions):
+            self._publish_commands(joint_positions, moving_time, accel_time, blocking)
+            return True
+        else:
+            return False
+    
+    def set_joint_positions_for_homing(
         self,
         joint_positions: List[float],
         moving_time: float = None,
@@ -382,11 +440,18 @@ class InterbotixArmXSInterface:
         :return: `True` if position was commanded; `False` if it wasn't due to being outside limits
         """
         self.core.get_logger().debug(f'setting {joint_positions=}')
-        if self._check_joint_limits(joint_positions):
-            self._publish_commands(joint_positions, moving_time, accel_time, blocking)
-            return True
-        else:
+        current_pos = self.core.joint_states.position[:6]
+        violated_joints = self._check_joint_limits_homing(joint_positions)
+        if len(joint_positions) == len(violated_joints):
+            # all joints were rejected
+            print("all joints violated limits")
             return False
+        for joint in violated_joints: # if the joint command violated the limit, set the command to the current joint position
+            joint_positions[joint] = current_pos[joint]
+
+        self._publish_commands(joint_positions, moving_time, accel_time, blocking)
+        return True
+    
 
     def go_to_home_pose(
         self,

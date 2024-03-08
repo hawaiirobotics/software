@@ -151,7 +151,7 @@ def move_arms(bot_list, target_pose_list, move_time=1):
     traj_list = [np.linspace(curr_pose, target_pose, num_steps) for curr_pose, target_pose in zip(curr_pose_list, target_pose_list)]
     for t in range(num_steps):
         for bot_id, bot in enumerate(bot_list):
-            bot.arm.set_joint_positions(traj_list[bot_id][t], blocking=False)
+            bot.arm.set_joint_positions_for_homing(traj_list[bot_id][t], blocking=False)
         time.sleep(DT)
 
 def move_grippers(bot_list, target_pose_list, move_time):

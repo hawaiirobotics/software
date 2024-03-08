@@ -75,7 +75,6 @@ def setup_student_arms(student_left, student_right):
     print("current right arm pos: ", start_right_teacher_pos)
     start_left_teacher_pos[1] = 0.0 # set joint 2 to zero position
     start_right_teacher_pos[1] = 0.0
-    # exit(1)
 
     move_arms([student_left, student_right], [start_left_teacher_pos,start_right_teacher_pos] , move_time=5)
     move_arms([student_left, student_right], [start_arm_qpos[:6],start_arm_qpos[7:-1]] , move_time=10)
@@ -137,7 +136,6 @@ def capture_one_episode(max_timesteps, camera_names, dataset_dir, dataset_name, 
         actual_dt_history.append([t0, t1, t2])
 
     # Open student grippers
-    # move_grippers([env.student_left, env.student_right], [STUDENT_GRIPPER_JOINT_OPEN] * 2, move_time=0.5)
     move_grippers([env.student_left, env.student_right], [STUDENT_GRIPPER_JOINT_OPEN]*2 , move_time=1.5)
     print("DONE")
         
@@ -228,7 +226,7 @@ if __name__=='__main__':
     using_sim = False
 
     # Serial port configuration
-    ser_port = '/dev/ttyACM0'  # Change this to your serial port (e.g., /dev/ttyUSB0, /dev/ttyS0)
+    ser_port = '/dev/ttyACM0' 
     baud_rate = 250000
 
     # Open the serial port
