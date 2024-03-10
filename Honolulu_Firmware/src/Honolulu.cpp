@@ -263,6 +263,10 @@ void print_offsets() {
 
 void setup()
 {
+  strip.begin();
+  strip.show(); 
+  setAllLEDsToWhite();
+
   //-------TFT-------
   tft.init(135, 240); // Init ST7789 240x135
 
@@ -388,9 +392,6 @@ void loop()
     uint32_t startTime = micros(); // Record the start time
 
     static uint8_t reset_debounce = 0;
-    strip.begin();
-    strip.show(); 
-    setAllLEDsToWhite();
     
     // update the offsets when the reset button is held for 1s
     if(reset_debounce >= 60) {
