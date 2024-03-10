@@ -151,9 +151,22 @@ Adafruit_ST7789 tft = Adafruit_ST7789(TFT_CS, TFT_DC, TFT_RST);
 // TP34 reset button
 #define RESET_BTN A8
 
-#define LIGHTING 5
-#define NUM_LEDS 10
-Adafruit_NeoPixel strip = Adafruit_NeoPixel(NUM_LEDS, LIGHTING, NEO_GRB + NEO_KHZ800);
+#define NUM_LEDS 270  // Change this to the number of LEDs in your strip
+#define LIGHTING_PIN 5  // Change this to the pin number connected to your LED strip
+
+// Initialize the NeoPixel strip
+Adafruit_NeoPixel strip = Adafruit_NeoPixel(NUM_LEDS, LIGHTING_PIN, NEO_GRB + NEO_KHZ800);
+
+void setAllLEDsToWhite() {
+  // Set all the LEDs to white at 70% brightness
+  uint32_t white = strip.Color(178, 178, 178); // White color at 70% brightness (255 * 0.7 ≈ 178)
+
+  for (int i = 0; i < strip.numPixels(); i++) {
+    strip.setPixelColor(i, white);
+  }
+
+  strip.show();
+}
 
 const float p = 3.1415926;
 
@@ -371,10 +384,14 @@ void setup()
 
 void loop()
 {
+
     uint32_t startTime = micros(); // Record the start time
 
     static uint8_t reset_debounce = 0;
-
+    strip.begin();
+    strip.show(); 
+    setAllLEDsToWhite();
+    
     // update the offsets when the reset button is held for 1s
     if(reset_debounce >= 60) {
       Serial.println("REGARDS");
