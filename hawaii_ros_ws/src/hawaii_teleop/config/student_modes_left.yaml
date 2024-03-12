@@ -1,4 +1,4 @@
-port: /dev/ttyUSB0
+port: /dev/tty_STUDENT_ARM_LEFT
 
 groups:
   arm:

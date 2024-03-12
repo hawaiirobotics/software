@@ -54,20 +54,6 @@ def generate_launch_description():
                                                     'student_modes_right.yaml',
                                                 ])),
         DeclareLaunchArgument('use_sim', default_value='true'),
-
-        # # Set GAZEBO_MODEL_URI to empty string to prevent Gazebo from downloading models
-        # SetEnvironmentVariable(
-        #     name='GAZEBO_MODEL_URI',
-        #     value=['']
-        # ),
-
-        # # Set GAZEBO_MODEL_DATABASE_URI to empty string to prevent Gazebo from downloading models
-        # SetEnvironmentVariable(
-        #     name='GAZEBO_MODEL_DATABASE_URI',
-        #     value=['']
-        # ),
-
-        # ExecuteProcess(cmd=['gazebo', '--verbose','-s', 'libgazebo_ros_factory.so'], output='screen', additional_env=env),
         
         GroupAction([
             # Instances use the robot's name for namespace
@@ -127,92 +113,80 @@ def generate_launch_description():
             ),
         ]),
 
-        # Node(
-        #     package='tf2_ros',
-        #     executable='static_transform_publisher',
-        #     name='student_left_transform_broadcaster',
-        #     output='screen',
-        #     arguments=[x_spawn_left, y_spawn_left, '0', '0', '0', '-0.707090', '0.707123','/world', f"/student_left/base_link"] #update x,y,z,and quats
-        # ),
-        # Node(
-        #     package='tf2_ros',
-        #     executable='static_transform_publisher',
-        #     name='student_right_transform_broadcaster',
-        #     output='screen',
-        #     arguments=[x_spawn_right, y_spawn_right, '0', '0', '0', '0.707090', '0.707123','/world', f"/student_right/base_link"] #update x,y,z,and quats
-        # ),
-
-        # Node(
-        #     package='usb_cam',
-        #     executable='usb_cam_node_exe',
-        #     name='usb_cam_high',
-        #     output='screen',
-        #     namespace='usb_cam_high',
-        #     parameters=[
-        #         {'video_device': '/dev/video0'},
-        #         {'framerate': 60.0},
-        #         {'image_width': 640},
-        #         {'image_height': 480},
-        #         {'pixel_format': 'yuyv'},
-        #         {'camera_frame_id': 'usb_cam'},
-        #         {'io_method': 'mmap'},
-        #         {'autofocus': False},
-        #         {'focus': 5},
-        #         {'autoexposure': True}
-        #     ]
-        # ),
-        # Node(
-        #     package='usb_cam',
-        #     executable='usb_cam_node_exe',
-        #     name='usb_cam_2',
-        #     output='screen',
-        #     parameters=[
-        #         {'video_device': '/dev/CAM_2'},
-        #         {'framerate': 60.0},
-        #         {'image_width': 640},
-        #         {'image_height': 480},
-        #         {'pixel_format': 'yuyv'},
-        #         {'camera_frame_id': 'usb_cam'},
-        #         {'io_method': 'mmap'},
-        #         {'autofocus': False},
-        #         {'focus': 5},
-        #         {'autoexposure': True}
-        #     ]
-        # ),
-        # Node(
-        #     package='usb_cam',
-        #     executable='usb_cam_node_exe',
-        #     name='usb_cam_3',
-        #     output='screen',
-        #     parameters=[
-        #         {'video_device': '/dev/CAM_3'},
-        #         {'framerate': 60.0},
-        #         {'image_width': 640},
-        #         {'image_height': 480},
-        #         {'pixel_format': 'yuyv'},
-        #         {'camera_frame_id': 'usb_cam'},
-        #         {'io_method': 'mmap'},
-        #         {'autofocus': False},
-        #         {'focus': 5},
-        #         {'autoexposure': True}
-        #     ]
-        # ),
-        # Node(
-        #     package='usb_cam',
-        #     executable='usb_cam_node_exe',
-        #     name='usb_cam_4',
-        #     output='screen',
-        #     parameters=[
-        #         {'video_device': '/dev/CAM_4'},
-        #         {'framerate': 60.0},
-        #         {'image_width': 640},
-        #         {'image_height': 480},
-        #         {'pixel_format': 'yuyv'},
-        #         {'camera_frame_id': 'usb_cam'},
-        #         {'io_method': 'mmap'},
-        #         {'autofocus': False},
-        #         {'focus': 5},
-        #         {'autoexposure': True}
-        #     ]
-        # )
+        Node(
+            package='usb_cam',
+            executable='usb_cam_node_exe',
+            name='usb_cam_high',
+            output='screen',
+            namespace='usb_cam_high',
+            parameters=[
+                {'video_device': '/dev/CAM_HIGH'},
+                {'framerate': 60.0},
+                {'image_width': 640},
+                {'image_height': 480},
+                {'pixel_format': 'yuyv'},
+                {'camera_frame_id': 'usb_cam'},
+                {'io_method': 'mmap'},
+                {'autofocus': False},
+                {'focus': 5},
+                {'autoexposure': True}
+            ]
+        ),
+        Node(
+            package='usb_cam',
+            executable='usb_cam_node_exe',
+            name='usb_cam_front',
+            output='screen',
+            namespace='usb_cam_front',
+            parameters=[
+                {'video_device': '/dev/CAM_FRONT'},
+                {'framerate': 60.0},
+                {'image_width': 640},
+                {'image_height': 480},
+                {'pixel_format': 'yuyv'},
+                {'camera_frame_id': 'usb_cam'},
+                {'io_method': 'mmap'},
+                {'autofocus': False},
+                {'focus': 5},
+                {'autoexposure': True}
+            ]
+        ),
+        Node(
+            package='usb_cam',
+            executable='usb_cam_node_exe',
+            name='usb_cam_left',
+            output='screen',
+            namespace='usb_cam_left',
+            parameters=[
+                {'video_device': '/dev/CAM_LEFT'},
+                {'framerate': 60.0},
+                {'image_width': 640},
+                {'image_height': 480},
+                {'pixel_format': 'yuyv'},
+                {'camera_frame_id': 'usb_cam'},
+                {'io_method': 'mmap'},
+                {'autofocus': False},
+                {'focus': 5},
+                {'autoexposure': True}
+            ]
+        ),
+        Node(
+            package='usb_cam',
+            executable='usb_cam_node_exe',
+            name='usb_cam_right',
+            output='screen',
+            namespace='usb_cam_right',
+            parameters=[
+                {'video_device': '/dev/CAM_RIGHT'},
+                {'framerate': 60.0},
+                {'image_width': 640},
+                {'image_height': 480},
+                {'pixel_format': 'yuyv'},
+                {'camera_frame_id': 'usb_cam'},
+                {'io_method': 'mmap'},
+                {'autofocus': False},
+                {'focus': 5},
+                {'autoexposure': True}
+            ]
+        )
     ])

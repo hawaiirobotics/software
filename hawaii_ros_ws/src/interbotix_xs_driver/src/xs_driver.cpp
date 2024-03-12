@@ -418,11 +418,11 @@ bool InterbotixDriverXS::write_commands(
       dynamixel_commands[i] = dxl_wb.convertRadian2Value(
         get_group_info(name)->joint_ids.at(i),
         commands.at(i));
-      XSLOG_DEBUG(
-        "ID: %d, writing %s command %d.",
-        get_group_info(name)->joint_ids.at(i),
-        mode.c_str(),
-        dynamixel_commands[i]);
+      // XSLOG_DEBUG(
+      //   "ID: %d, writing %s command %d.",
+      //   get_group_info(name)->joint_ids.at(i),
+      //   mode.c_str(),
+      //   dynamixel_commands[i]);
     }
     // write position commands
     dxl_wb.syncWrite(
@@ -520,6 +520,7 @@ bool InterbotixDriverXS::write_joint_command(
   float command)
 {
   static float safe_gripper_position = 0.0f;
+  static float prev_gripper_command = 4.0f;
   
   const std::string mode = motor_map[name].mode;
   if (
@@ -535,6 +536,9 @@ bool InterbotixDriverXS::write_joint_command(
     }
     if (name == "gripper") {
       // Vectors to store the joint states
+      // for (const auto & joint_name : get_group_info("gripper")->joint_names){
+      //   printf("%s\n", joint_name);
+      // }
       std::vector<float> positions;
       std::vector<float> velocities;
       std::vector<float> effort;
@@ -543,20 +547,22 @@ bool InterbotixDriverXS::write_joint_command(
         XSLOG_ERROR("Could not get joint states");
         return false;
       }
-
-      int16_t present_load = get_gripper_present_load();
-      printf("Present_Load: %d\n", present_load);
-      int16_t load_limit = -300;
+      float current_pos = positions.at(6);
+      float present_load = prev_gripper_command - current_pos;
+      // get_gripper_present_load();
+      printf("Present_Load: %f\n", present_load);
+      float load_limit = -0.6;
       if (present_load > load_limit) {
         if (!positions.empty()) {
-          safe_gripper_position = positions.at(6);
+          safe_gripper_position = current_pos;
         }
       }
+      prev_gripper_command = command;
       if (present_load < load_limit && command <= safe_gripper_position) {
         //not okay to proceed with command
         XSLOG_ERROR("Command Rejected: Present Load '%d' on Motor '%s' too high, Present Pos: %f, Commanded Pos: %f.", present_load, name.c_str(), positions.at(6), command);
           return false;
-        }  
+      }  
     }
     XSLOG_DEBUG(
       "ID: %d, writing %s command %f.",

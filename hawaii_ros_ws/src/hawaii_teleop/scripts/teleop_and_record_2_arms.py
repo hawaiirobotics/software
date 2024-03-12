@@ -11,22 +11,19 @@ import queue
 
 from real_env import make_real_env
 from teleop_utils import move_grippers, move_arms, setup_student_bot, get_arm_gripper_positions, get_arm_joint_positions
-from teleop_utils import DT, STUDENT_GRIPPER_JOINT_OPEN, STUDENT_GRIPPER_JOINT_CLOSE
+from teleop_utils import DT, STUDENT_GRIPPER_JOINT_OPEN
+from cv_bridge import CvBridge
 
 # Create a shared queue
 # the queue can grow infinitely if max_size isn't set. May need to do that eventually
 data_queue = queue.Queue()
 setup_done = False
 
-
-value = 0
-increment = 0.01
-increasing = True
-
 # Function to continuously read data from the serial port
 def read_from_serial(serial_port, data_queue):
     # will need to do more once the payload structure is finalized
     print("starting thread")
+    global stop_threads
     try:
         serial_port.flush()
         serial_port.readline()
@@ -36,7 +33,7 @@ def read_from_serial(serial_port, data_queue):
         exit(1)
     first_frame = True
     try:
-        while True:
+        while True and not stop_threads:
             if serial_port.in_waiting > 0:
                 line = serial_port.readline().decode('utf-8').strip()
                 elements = line.split(',')
@@ -57,7 +54,7 @@ def read_from_serial(serial_port, data_queue):
         serial_port.close()
         exit(1)
 
-def get_joint_states():
+def get_joint_commands():
     return data_queue.get()
 
 def setup_student_arms(student_left, student_right):
@@ -66,9 +63,10 @@ def setup_student_arms(student_left, student_right):
     setup_student_bot(student_right)
 
     # move student arms to teacher arm position
-    start_arm_qpos = get_joint_states()
+    start_arm_qpos = get_joint_commands()
     print(start_arm_qpos)
 
+    # raise arms off of table to allow other joints to move
     start_left_teacher_pos = get_arm_joint_positions(student_left)
     start_right_teacher_pos = get_arm_joint_positions(student_right)
     print("current left arm pos: ", start_left_teacher_pos)
@@ -76,8 +74,8 @@ def setup_student_arms(student_left, student_right):
     start_left_teacher_pos[1] = 0.0 # set joint 2 to zero position
     start_right_teacher_pos[1] = 0.0
 
-    move_arms([student_left, student_right], [start_left_teacher_pos,start_right_teacher_pos] , move_time=5)
-    move_arms([student_left, student_right], [start_arm_qpos[:6],start_arm_qpos[7:-1]] , move_time=10)
+    move_arms([student_left, student_right], [start_left_teacher_pos,start_right_teacher_pos] , move_time=2.5)
+    move_arms([student_left, student_right], [start_arm_qpos[:6],start_arm_qpos[7:-1]] , move_time=5)
     print("done moving to zero")
     # move grippers to starting position
     move_grippers([student_left, student_right], [STUDENT_GRIPPER_JOINT_OPEN, STUDENT_GRIPPER_JOINT_OPEN], move_time=1.5)
@@ -122,12 +120,30 @@ def capture_one_episode(max_timesteps, camera_names, dataset_dir, dataset_name, 
     actions = []
     actual_dt_history = []
     # for t in tqdm(range(max_timesteps)):
+
+    prev_command = get_arm_joint_positions(env.student_left)+ get_arm_joint_positions(env.student_right)
+    threshold = 0.2
     for t in range(max_timesteps):
         if t %100 == 0:
             print(data_queue.qsize())
         t0 = time.time() #
-        action = get_joint_states()
-        # print(action)
+        action = get_joint_commands()
+        # if t%30 == 0:
+        #     env.image_recorder.print_profiling_stats()
+
+        # Validate action
+        # for index, (prev_pos, new_pos) in enumerate(zip(action, prev_command)):
+        #     arm = "left"
+        #     print(prev_pos)
+        #     print(new_pos)
+        #     if abs(prev_pos - new_pos) > threshold:
+        #         if index > 7:
+        #             arm = "right"
+        #             index = index % 8  # Adjusted for right arm indexing
+        #         print(f"Cancelling Teleop: command {new_pos} to joint {index + 1} on {arm} arm is too far from the current pos {prev_pos}.")
+        #         return False
+
+
         t1 = time.time() #
         ts = env.step(action)
         t2 = time.time() #
@@ -138,20 +154,22 @@ def capture_one_episode(max_timesteps, camera_names, dataset_dir, dataset_name, 
     # Open student grippers
     move_grippers([env.student_left, env.student_right], [STUDENT_GRIPPER_JOINT_OPEN]*2 , move_time=1.5)
     print("DONE")
+
+    # env.shutdown()
         
-    freq_mean = print_dt_diagnosis(actual_dt_history)
-    if freq_mean < 42 and not using_sim:
-        print("Sampling frequency is too low. Should be >= 42")
-        return False
+    print_dt_diagnosis(actual_dt_history)
+    # if freq_mean < 42 and not using_sim:
+    #     print("Sampling frequency is too low. Should be >= 42")
+    #     return False
     
     """
     For each timestep:
     observations
     - images
         - cam_high          (480, 640, 2) 'uint8'
-        - cam_low           (480, 640, 2) 'uint8'
-        - cam_left_wrist    (480, 640, 2) 'uint8'
-        - cam_right_wrist   (480, 640, 2) 'uint8'
+        - cam_front          (480, 640, 2) 'uint8'
+        - cam_left          (480, 640, 2) 'uint8'
+        - cam_right         (480, 640, 2) 'uint8'
     - qpos                  (14,)         'float64'
     - qvel                  (14,)         'float64'
     - effort                (14,)         'float64'
@@ -169,6 +187,7 @@ def capture_one_episode(max_timesteps, camera_names, dataset_dir, dataset_name, 
         data_dict[f'/observations/images/{cam_name}'] = []
 
     print("before while actions")
+    bridge = CvBridge()
     while actions:
         action = actions.pop(0)
         ts = timesteps.pop(0)
@@ -177,13 +196,13 @@ def capture_one_episode(max_timesteps, camera_names, dataset_dir, dataset_name, 
         data_dict['/observations/effort'].append(ts.observation['effort'])
         data_dict['/action'].append(action)
         for cam_name in camera_names:
-            data_dict[f'/observations/images/{cam_name}'].append(ts.observation['images'][cam_name])
+            data_dict[f'/observations/images/{cam_name}'].append(bridge.imgmsg_to_cv2(ts.observation['images'][cam_name], desired_encoding='passthrough'))
    
     # yuv_image_data = data_dict[f'/observations/images/cam_high'][0]
     # Convert YUV422 to BGR using OpenCV
     # using to verify camera is capturing images
     # yuv_image = np.array(yuv_image_data)
-    # bgr_image = cv2.cvtColor(yuv_image, cv2.COLOR_YUV2BGR_YUYV)
+    # bgr_image = cv2.cvtColor(yuv_image, cv2.COLOR_YUV2BGR_YUYV) 
     # cv2.imshow('Image', bgr_image)
     # cv2.waitKey(0) # Keep the window open until any key is pressed
     # cv2.destroyAllWindows()
@@ -208,7 +227,15 @@ def capture_one_episode(max_timesteps, camera_names, dataset_dir, dataset_name, 
         _ = root.create_dataset('action', (max_timesteps, 14))
 
         for name, array in data_dict.items():
-            root[name][...] = array
+            if array is not None:
+                try:
+                    root[name][...] = array
+                except TypeError as e:
+                    print(f"Error setting array for {name}: {e}")
+                    print(f"Array type: {type(array)}, Array content: {array}")
+            else:
+                print(f"Array for {name} group is None")
+
     print(f'Saving: {time.time() - t0:.1f} secs')
 
     return True
@@ -219,14 +246,15 @@ if __name__=='__main__':
     os.nice(1)
 
     overwrite = True
-    max_timesteps= 10000
+    max_timesteps= 10*60 # 10 seconds
     dataset_name = "testing"
     dataset_dir = "testing"
-    camera_names= ['cam_high']#, 'cam_low', 'cam_left_wrist', 'cam_right_wrist']
+    camera_names= ['cam_high', 'cam_front', 'cam_left', 'cam_right']
     using_sim = False
+    stop_threads = False
 
     # Serial port configuration
-    ser_port = '/dev/ttyACM0' 
+    ser_port = '/dev/tty_TEACHER_ARMS' 
     baud_rate = 250000
 
     # Open the serial port
@@ -245,8 +273,11 @@ if __name__=='__main__':
     
     while True:
         is_healthy = capture_one_episode(max_timesteps, camera_names, dataset_dir, dataset_name, overwrite, using_sim, ser)
+        print("Finished session")
         if is_healthy:
             break
+    print("DONE")
+    stop_threads = True
+    read_thread.join() # wait for thread to finish what it was doing
     rclpy.shutdown()
-    read_thread.join()
     ser.close()

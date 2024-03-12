@@ -2,6 +2,7 @@ import numpy as np
 import time
 import rclpy
 from rclpy.node import Node
+import cProfile, pstats, io
 from interbotix_xs_msgs.msg import JointSingleCommand
 
 DT = 0.02
@@ -12,63 +13,93 @@ START_ARM_POSE = [0,0,0,0,0,0,0]
 class ImageRecorder(Node):
     def __init__(self, init_node=True, is_debug=False):
         from collections import deque
-        from cv_bridge import CvBridge
         from sensor_msgs.msg import Image
+        # self.image_queue = image_queue
+        # self.request_event = request_event
+        
         self.is_debug = is_debug
-        self.bridge = CvBridge()
-        self.camera_names = ['cam_high']#, 'cam_low', 'cam_left_wrist', 'cam_right_wrist']
+        # self.bridge = CvBridge()
+        self.camera_names = ['cam_high', 'cam_front', 'cam_left', 'cam_right']
         if init_node:
             rclpy.init(args=None)
         super().__init__(node_name='image_recorder')
+        self.profiler = cProfile.Profile()
         for cam_name in self.camera_names:
             setattr(self, f'{cam_name}_image', None)
             setattr(self, f'{cam_name}_secs', None)
             setattr(self, f'{cam_name}_nsecs', None)
             if cam_name == 'cam_high':
                 callback_func = self.image_cb_cam_high
-            elif cam_name == 'cam_low':
-                callback_func = self.image_cb_cam_low
-            elif cam_name == 'cam_left_wrist':
-                callback_func = self.image_cb_cam_left_wrist
-            elif cam_name == 'cam_right_wrist':
-                callback_func = self.image_cb_cam_right_wrist
+            elif cam_name == 'cam_front':
+                callback_func = self.image_cb_cam_front
+            elif cam_name == 'cam_left':
+                callback_func = self.image_cb_cam_left
+            elif cam_name == 'cam_right':
+                callback_func = self.image_cb_cam_right
             else:
                 raise NotImplementedError
             self.create_subscription(Image, f"/usb_{cam_name}/image_raw", callback_func, 10)
             if self.is_debug:
                 setattr(self, f'{cam_name}_timestamps', deque(maxlen=50))
-        while getattr(self, f'cam_high_image') is None and rclpy.ok():
+        while any(getattr(self, f'{cam_name}_image') is None for cam_name in self.camera_names) and rclpy.ok(): # check that all cameras are ready and publishing to their appropriate topics
             rclpy.spin_once(self)
-        time.sleep(0.5)
 
-    def image_cb(self, cam_name, data):
-        setattr(self, f'{cam_name}_image', self.bridge.imgmsg_to_cv2(data, desired_encoding='passthrough'))
-        setattr(self, f'{cam_name}_secs', data.header.stamp.sec)
-        setattr(self, f'{cam_name}_nsecs', data.header.stamp.nanosec)
-        if self.is_debug:
-            getattr(self, f'{cam_name}_timestamps').append(data.header.stamp.sec + data.header.stamp.nanosec * 1e-9)
+    # def image_cb(self, cam_name, data):
+    #     self.profiler.enable()
+    #     setattr(self, f'{cam_name}_image', data)
+    #     setattr(self, f'{cam_name}_secs', data.header.stamp.sec)
+    #     setattr(self, f'{cam_name}_nsecs', data.header.stamp.nanosec)
+    #     if self.is_debug:
+    #         getattr(self, f'{cam_name}_timestamps').append(data.header.stamp.sec + data.header.stamp.nanosec * 1e-9)
+    #     self.profiler.disable()
 
     def image_cb_cam_high(self, data):
-        cam_name = 'cam_high'
-        return self.image_cb(cam_name, data)
+        self.profiler.enable()
+        self.cam_high_image=data
+        self.cam_high_secs =data.header.stamp.sec
+        self.cam_high_nsecs=data.header.stamp.nanosec
+        self.profiler.disable()
+        return
 
-    def image_cb_cam_low(self, data):
-        cam_name = 'cam_low'
-        return self.image_cb(cam_name, data)
+    def image_cb_cam_front(self, data):
+        self.cam_front_image=data
+        self.cam_front_secs =data.header.stamp.sec
+        self.cam_front_nsecs=data.header.stamp.nanosec
+        return
 
-    def image_cb_cam_left_wrist(self, data):
-        cam_name = 'cam_left_wrist'
-        return self.image_cb(cam_name, data)
+    def image_cb_cam_left(self, data):
+        self.cam_left_image=data
+        self.cam_left_secs =data.header.stamp.sec
+        self.cam_left_nsecs=data.header.stamp.nanosec
+        return
 
-    def image_cb_cam_right_wrist(self, data):
-        cam_name = 'cam_right_wrist'
-        return self.image_cb(cam_name, data)
+    def image_cb_cam_right(self, data):
+        self.cam_right_image=data
+        self.cam_right_secs =data.header.stamp.sec
+        self.cam_right_nsecs=data.header.stamp.nanosec
+        return
+
+    def print_profiling_stats(self):
+        s = io.StringIO()
+        sortby = 'cumulative'
+        ps = pstats.Stats(self.profiler, stream=s).sort_stats(sortby)
+        ps.print_stats()
+        print(s.getvalue())
 
     def get_images(self):
         image_dict = dict()
         for cam_name in self.camera_names:
             image_dict[cam_name] = getattr(self, f'{cam_name}_image')
         return image_dict
+
+    # def get_images(self):
+    #     if self.request_event.is_set():
+    #         image_dict = dict()
+    #         for cam_name in self.camera_names:
+    #             image_dict[cam_name] = getattr(self, f'{cam_name}_image')
+    #         self.image_queue.put(image_dict)
+    #         self.request_event.clear()  # Reset the event
+
 
     def print_diagnostics(self):
         def dt_helper(l):
@@ -167,8 +198,6 @@ def move_grippers(bot_list, target_pose_list, move_time):
 
 def setup_student_bot(bot):
     bot.core.robot_reboot_motors("single", "gripper", True)
-    # bot.core.robot_set_operating_modes("group", "arm", "position", profile_type="time")
-    # bot.core.robot_set_operating_modes("single", "gripper", "position", profile_type="time")
     torque_on(bot)
 
 def torque_off(bot):
