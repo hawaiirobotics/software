@@ -102,6 +102,6 @@ motors:
     Return_Delay_Time: 0
     Drive_Mode: 0 
     Velocity_Limit: 131
-    Min_Position_Limit: 558
-    Max_Position_Limit: 4095
+    Min_Position_Limit: 450
+    Max_Position_Limit: 3835
     Secondary_ID: 255

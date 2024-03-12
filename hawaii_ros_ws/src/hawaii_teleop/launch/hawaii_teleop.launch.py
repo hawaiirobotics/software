@@ -129,7 +129,7 @@ def generate_launch_description():
                 {'io_method': 'mmap'},
                 {'autofocus': False},
                 {'focus': 5},
-                {'autoexposure': True}
+                # {'autoexposure': False}
             ]
         ),
         Node(
@@ -148,7 +148,7 @@ def generate_launch_description():
                 {'io_method': 'mmap'},
                 {'autofocus': False},
                 {'focus': 5},
-                {'autoexposure': True}
+                # {'autoexposure': False}
             ]
         ),
         Node(
@@ -167,7 +167,7 @@ def generate_launch_description():
                 {'io_method': 'mmap'},
                 {'autofocus': False},
                 {'focus': 5},
-                {'autoexposure': True}
+                # {'autoexposure': False}
             ]
         ),
         Node(
@@ -186,7 +186,7 @@ def generate_launch_description():
                 {'io_method': 'mmap'},
                 {'autofocus': False},
                 {'focus': 5},
-                {'autoexposure': True}
+                # {'autoexposure': False}
             ]
         )
     ])
