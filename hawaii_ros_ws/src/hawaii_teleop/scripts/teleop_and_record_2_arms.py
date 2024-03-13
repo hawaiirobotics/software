@@ -10,7 +10,7 @@ import threading
 import queue
 
 from real_env import make_real_env
-from teleop_utils import move_grippers, move_arms, setup_student_bot, get_arm_gripper_positions, get_arm_joint_positions
+from teleop_utils import pull_images_from_bag, move_grippers, move_arms, setup_student_bot, get_arm_gripper_positions, get_arm_joint_positions
 from teleop_utils import DT, STUDENT_GRIPPER_JOINT_OPEN
 from cv_bridge import CvBridge
 
@@ -123,13 +123,14 @@ def capture_one_episode(max_timesteps, camera_names, dataset_dir, dataset_name, 
 
     prev_command = get_arm_joint_positions(env.student_left)+ get_arm_joint_positions(env.student_right)
     threshold = 0.2
+    env.start()
     for t in range(max_timesteps):
         if t %100 == 0:
             print(data_queue.qsize())
         t0 = time.time() #
         action = get_joint_commands()
-        # if t%30 == 0:
-        #     env.image_recorder.print_profiling_stats()
+        if t%30 == 0:
+            env.image_recorder.print_profiling_stats()
 
         # Validate action
         # for index, (prev_pos, new_pos) in enumerate(zip(action, prev_command)):
@@ -155,7 +156,7 @@ def capture_one_episode(max_timesteps, camera_names, dataset_dir, dataset_name, 
     move_grippers([env.student_left, env.student_right], [STUDENT_GRIPPER_JOINT_OPEN]*2 , move_time=1.5)
     print("DONE")
 
-    # env.shutdown()
+    env.shutdown()
         
     print_dt_diagnosis(actual_dt_history)
     # if freq_mean < 42 and not using_sim:
@@ -195,17 +196,8 @@ def capture_one_episode(max_timesteps, camera_names, dataset_dir, dataset_name, 
         data_dict['/observations/qvel'].append(ts.observation['qvel'])
         data_dict['/observations/effort'].append(ts.observation['effort'])
         data_dict['/action'].append(action)
-        for cam_name in camera_names:
-            data_dict[f'/observations/images/{cam_name}'].append(bridge.imgmsg_to_cv2(ts.observation['images'][cam_name], desired_encoding='passthrough'))
-   
-    # yuv_image_data = data_dict[f'/observations/images/cam_high'][0]
-    # Convert YUV422 to BGR using OpenCV
-    # using to verify camera is capturing images
-    # yuv_image = np.array(yuv_image_data)
-    # bgr_image = cv2.cvtColor(yuv_image, cv2.COLOR_YUV2BGR_YUYV) 
-    # cv2.imshow('Image', bgr_image)
-    # cv2.waitKey(0) # Keep the window open until any key is pressed
-    # cv2.destroyAllWindows()
+    
+    data_dict = pull_images_from_bag(max_timesteps, data_dict)
 
     # HDF5
     print("before making hdf5 file")
@@ -232,7 +224,7 @@ def capture_one_episode(max_timesteps, camera_names, dataset_dir, dataset_name, 
                     root[name][...] = array
                 except TypeError as e:
                     print(f"Error setting array for {name}: {e}")
-                    print(f"Array type: {type(array)}, Array content: {array}")
+                    # print(f"Array type: {type(array)}, Array content: {array}")
             else:
                 print(f"Array for {name} group is None")
 
@@ -246,7 +238,7 @@ if __name__=='__main__':
     os.nice(1)
 
     overwrite = True
-    max_timesteps= 10*60 # 10 seconds
+    max_timesteps= 1*600 # 10 seconds
     dataset_name = "testing"
     dataset_dir = "testing"
     camera_names= ['cam_high', 'cam_front', 'cam_left', 'cam_right']

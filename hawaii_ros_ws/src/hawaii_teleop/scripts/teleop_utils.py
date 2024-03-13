@@ -1,8 +1,16 @@
 import numpy as np
 import time
+import os
+import shutil
 import rclpy
 from rclpy.node import Node
+from rclpy.serialization import serialize_message, deserialize_message
+import rosbag2_py
+from collections import deque
+from sensor_msgs.msg import Image
 import cProfile, pstats, io
+from cv_bridge import CvBridge
+import cv2
 from interbotix_xs_msgs.msg import JointSingleCommand
 
 DT = 0.02
@@ -12,22 +20,19 @@ START_ARM_POSE = [0,0,0,0,0,0,0]
 
 class ImageRecorder(Node):
     def __init__(self, init_node=True, is_debug=False):
-        from collections import deque
-        from sensor_msgs.msg import Image
-        # self.image_queue = image_queue
-        # self.request_event = request_event
         
         self.is_debug = is_debug
-        # self.bridge = CvBridge()
         self.camera_names = ['cam_high', 'cam_front', 'cam_left', 'cam_right']
+
         if init_node:
             rclpy.init(args=None)
         super().__init__(node_name='image_recorder')
+
+        self.bag_writers = {cam_name: self.setup_rosbag_writer(cam_name) for cam_name in self.camera_names}
         self.profiler = cProfile.Profile()
+
         for cam_name in self.camera_names:
             setattr(self, f'{cam_name}_image', None)
-            setattr(self, f'{cam_name}_secs', None)
-            setattr(self, f'{cam_name}_nsecs', None)
             if cam_name == 'cam_high':
                 callback_func = self.image_cb_cam_high
             elif cam_name == 'cam_front':
@@ -35,49 +40,47 @@ class ImageRecorder(Node):
             elif cam_name == 'cam_left':
                 callback_func = self.image_cb_cam_left
             elif cam_name == 'cam_right':
-                callback_func = self.image_cb_cam_right
+                callback_func = self.image_cb_cam_right   
             else:
                 raise NotImplementedError
             self.create_subscription(Image, f"/usb_{cam_name}/image_raw", callback_func, 10)
-            if self.is_debug:
-                setattr(self, f'{cam_name}_timestamps', deque(maxlen=50))
-        while any(getattr(self, f'{cam_name}_image') is None for cam_name in self.camera_names) and rclpy.ok(): # check that all cameras are ready and publishing to their appropriate topics
-            rclpy.spin_once(self)
+        
+        # # check that all cameras are ready and publishing to their appropriate topics
+        # while any(getattr(self, f'{cam_name}_image') is None for cam_name in self.camera_names) and rclpy.ok(): 
+        #     rclpy.spin_once(self)
+        time.sleep(0.5)
 
-    # def image_cb(self, cam_name, data):
-    #     self.profiler.enable()
-    #     setattr(self, f'{cam_name}_image', data)
-    #     setattr(self, f'{cam_name}_secs', data.header.stamp.sec)
-    #     setattr(self, f'{cam_name}_nsecs', data.header.stamp.nanosec)
-    #     if self.is_debug:
-    #         getattr(self, f'{cam_name}_timestamps').append(data.header.stamp.sec + data.header.stamp.nanosec * 1e-9)
-    #     self.profiler.disable()
+    def setup_rosbag_writer(self,cam_name):
+        writer = rosbag2_py.SequentialWriter()
+        directory = f"image_recordings/{cam_name}"
+        if os.path.exists(directory):
+            shutil.rmtree(directory)
+        storage_options = rosbag2_py.StorageOptions(uri=directory, storage_id='sqlite3')
+        converter_options = rosbag2_py.ConverterOptions('', '')  
+
+        writer.open(storage_options, converter_options)
+
+        topic_metadata = rosbag2_py._storage.TopicMetadata(
+            name=f'/usb_{cam_name}/image_raw',
+            type='sensor_msgs/msg/Image',
+            serialization_format='cdr'
+        )
+        writer.create_topic(topic_metadata)
+        return writer
 
     def image_cb_cam_high(self, data):
         self.profiler.enable()
-        self.cam_high_image=data
-        self.cam_high_secs =data.header.stamp.sec
-        self.cam_high_nsecs=data.header.stamp.nanosec
+        self.bag_writers["cam_high"].write('/usb_cam_high/image_raw', serialize_message(data), self.get_clock().now().nanoseconds)
         self.profiler.disable()
-        return
-
+    
     def image_cb_cam_front(self, data):
-        self.cam_front_image=data
-        self.cam_front_secs =data.header.stamp.sec
-        self.cam_front_nsecs=data.header.stamp.nanosec
-        return
-
+        self.bag_writers["cam_front"].write('/usb_cam_front/image_raw', serialize_message(data), self.get_clock().now().nanoseconds)
+    
     def image_cb_cam_left(self, data):
-        self.cam_left_image=data
-        self.cam_left_secs =data.header.stamp.sec
-        self.cam_left_nsecs=data.header.stamp.nanosec
-        return
-
+        self.bag_writers["cam_left"].write('/usb_cam_left/image_raw', serialize_message(data), self.get_clock().now().nanoseconds)
+    
     def image_cb_cam_right(self, data):
-        self.cam_right_image=data
-        self.cam_right_secs =data.header.stamp.sec
-        self.cam_right_nsecs=data.header.stamp.nanosec
-        return
+        self.bag_writers["cam_right"].write('/usb_cam_right/image_raw', serialize_message(data), self.get_clock().now().nanoseconds)
 
     def print_profiling_stats(self):
         s = io.StringIO()
@@ -85,21 +88,6 @@ class ImageRecorder(Node):
         ps = pstats.Stats(self.profiler, stream=s).sort_stats(sortby)
         ps.print_stats()
         print(s.getvalue())
-
-    def get_images(self):
-        image_dict = dict()
-        for cam_name in self.camera_names:
-            image_dict[cam_name] = getattr(self, f'{cam_name}_image')
-        return image_dict
-
-    # def get_images(self):
-    #     if self.request_event.is_set():
-    #         image_dict = dict()
-    #         for cam_name in self.camera_names:
-    #             image_dict[cam_name] = getattr(self, f'{cam_name}_image')
-    #         self.image_queue.put(image_dict)
-    #         self.request_event.clear()  # Reset the event
-
 
     def print_diagnostics(self):
         def dt_helper(l):
@@ -110,6 +98,9 @@ class ImageRecorder(Node):
             image_freq = 1 / dt_helper(getattr(self, f'{cam_name}_timestamps'))
             print(f'{cam_name} {image_freq=:.2f}')
         print()
+
+    def destroy_node(self):
+        super().destroy_node()
 
 class Recorder(Node):
     def __init__(self, side, init_node=True, is_debug=False):
@@ -168,6 +159,36 @@ class Recorder(Node):
         gripper_command_freq = 1 / dt_helper(self.gripper_command_timestamps)
 
         print(f'{joint_freq=:.2f}\n{arm_command_freq=:.2f}\n{gripper_command_freq=:.2f}\n')
+
+def pull_images_from_bag(max_timesteps, data_dict):
+    camera_names = ['cam_high', 'cam_front', 'cam_left', 'cam_right']
+
+    readers = {}
+
+    for cam_name in camera_names:
+        directory = f"image_recordings/{cam_name}/{cam_name}_0.db3"
+        reader = rosbag2_py.SequentialReader()
+        storage_options = rosbag2_py.StorageOptions(uri=directory, storage_id='sqlite3')
+        converter_options = rosbag2_py.ConverterOptions('', 'cdr')
+        reader.open(storage_options, converter_options)
+        readers[cam_name]= reader
+
+    bridge = CvBridge()
+
+    # Continue looping as long as at least one reader has messages left
+    for cam_name, reader in readers.items():
+        count = 0
+        while reader.has_next() and count < max_timesteps:
+            count+=1
+            (topic, msg, timestamp) = reader.read_next()
+            try:
+                cv_image = bridge.imgmsg_to_cv2(deserialize_message(msg, Image), desired_encoding='passthrough')
+                data_dict[f'/observations/images/{cam_name}'].append(cv_image)
+            except Exception as e:
+                print(f"Error converting image message for {cam_name}: {e}")
+
+
+    return data_dict
 
 def get_arm_joint_positions(bot):
     return bot.arm.core.joint_states.position[:6]

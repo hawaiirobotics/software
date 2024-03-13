@@ -24,7 +24,7 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'hawaii_teleop = hawaii_teleop.hawaii_teleop:main'
+            'hawaii_teleop = hawaii_teleop.hawaii_teleop:main',
         ],
     },
 )

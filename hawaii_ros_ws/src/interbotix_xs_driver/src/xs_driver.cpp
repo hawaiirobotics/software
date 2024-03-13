@@ -551,7 +551,7 @@ bool InterbotixDriverXS::write_joint_command(
       float present_load = prev_gripper_command - current_pos;
       // get_gripper_present_load();
       printf("Present_Load: %f\n", present_load);
-      float load_limit = -0.6;
+      float load_limit = -0.2;
       if (present_load > load_limit) {
         if (!positions.empty()) {
           safe_gripper_position = current_pos;

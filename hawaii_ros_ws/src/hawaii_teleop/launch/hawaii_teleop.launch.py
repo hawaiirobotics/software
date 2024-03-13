@@ -121,7 +121,7 @@ def generate_launch_description():
             namespace='usb_cam_high',
             parameters=[
                 {'video_device': '/dev/CAM_HIGH'},
-                {'framerate': 60.0},
+                {'framerate': 30.0},
                 {'image_width': 640},
                 {'image_height': 480},
                 {'pixel_format': 'yuyv'},
@@ -140,7 +140,7 @@ def generate_launch_description():
             namespace='usb_cam_front',
             parameters=[
                 {'video_device': '/dev/CAM_FRONT'},
-                {'framerate': 60.0},
+                {'framerate': 30.0},
                 {'image_width': 640},
                 {'image_height': 480},
                 {'pixel_format': 'yuyv'},
@@ -159,7 +159,7 @@ def generate_launch_description():
             namespace='usb_cam_left',
             parameters=[
                 {'video_device': '/dev/CAM_LEFT'},
-                {'framerate': 60.0},
+                {'framerate': 30.0},
                 {'image_width': 640},
                 {'image_height': 480},
                 {'pixel_format': 'yuyv'},
@@ -178,7 +178,7 @@ def generate_launch_description():
             namespace='usb_cam_right',
             parameters=[
                 {'video_device': '/dev/CAM_RIGHT'},
-                {'framerate': 60.0},
+                {'framerate': 30.0},
                 {'image_width': 640},
                 {'image_height': 480},
                 {'pixel_format': 'yuyv'},

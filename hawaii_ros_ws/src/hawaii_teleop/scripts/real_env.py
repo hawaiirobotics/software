@@ -43,8 +43,6 @@ class RealEnv:
         self.recorder_right = Recorder('right', init_node=False)
         self.image_recorder = ImageRecorder(init_node=False)
         self.gripper_command = JointSingleCommand(name="gripper")
-
-        self.start()
         # self.image_queue = multiprocessing.Queue()
         # self.request_event = multiprocessing.Event()
         # image_recorder_process = multiprocessing.Process(target=self.run_image_recorder, args=(self.image_queue, self.request_event))
@@ -56,26 +54,21 @@ class RealEnv:
         self._execution_thread = Thread(target=self.run)
         self._execution_thread.start()
 
-    def run_image_recorder(self, image_queue, request_event):
-        image_recorder = ImageRecorder(image_queue, request_event, init_node=False)
-        rclpy.spin(image_recorder)
-        image_recorder.destroy_node()
-
     def run(self) -> None:
         """Thread target."""
         self.ex = MultiThreadedExecutor()
         self.ex.add_node(self.recorder_left)
         self.ex.add_node(self.recorder_right)
-        self.ex.add_node(self.image_recorder) #10 fps = 60hz, 30 fps = 30 hz
+        self.ex.add_node(self.image_recorder)
         self.ex.spin()
 
     def shutdown(self) -> None:
         """Destroy the node and shut down all threads and processes."""
         self.recorder_left.destroy_node()
         self.recorder_right.destroy_node()
-        # self.image_recorder.destroy_node()
-        rclpy.shutdown()
-        self._execution_thread.join()
+        self.image_recorder.destroy_node()
+        # rclpy.shutdown()
+        # self._execution_thread.join()
         time.sleep(0.5)
 
     def get_qpos(self):
@@ -98,17 +91,6 @@ class RealEnv:
         left_robot_effort = left_effort_raw[:7]
         right_robot_effort = right_effort_raw[:7]
         return np.concatenate([left_robot_effort, right_robot_effort])
-
-    def get_images(self):
-        return self.image_recorder.get_images()
-        # print("trying to get images")
-        # self.request_event.set()
-        # try:
-        #     images = self.image_queue.get(timeout=10)  # Adjust timeout as needed
-        #     # Process the images
-        # except multiprocessing.queue.Empty:
-        #     print("No images received")
-        # return images
 
     def set_gripper_pose(self, left_gripper_desired_pos_normalized, right_gripper_desired_pos_normalized):
         left_gripper_desired_joint = left_gripper_desired_pos_normalized
@@ -134,7 +116,7 @@ class RealEnv:
         obs['qpos'] = self.get_qpos()
         obs['qvel'] = self.get_qvel()
         obs['effort'] = self.get_effort()
-        obs['images'] = self.get_images()
+        # obs['images'] = self.image_recorder.get_images()
         return obs
 
     def get_reward(self):
