@@ -151,7 +151,7 @@ Adafruit_ST7789 tft = Adafruit_ST7789(TFT_CS, TFT_DC, TFT_RST);
 // TP34 reset button
 #define RESET_BTN A8
 
-#define NUM_LEDS 270  // Change this to the number of LEDs in your strip
+#define NUM_LEDS 265  // Change this to the number of LEDs in your strip
 #define LIGHTING_PIN 5  // Change this to the pin number connected to your LED strip
 
 // Initialize the NeoPixel strip
@@ -159,12 +159,17 @@ Adafruit_NeoPixel strip = Adafruit_NeoPixel(NUM_LEDS, LIGHTING_PIN, NEO_GRB + NE
 
 void setAllLEDsToWhite() {
   // Set all the LEDs to white at 70% brightness
-  uint32_t white = strip.Color(178, 178, 178); // White color at 70% brightness (255 * 0.7 ≈ 178)
+  //uint32_t white = strip.Color(255, 255, 0); 
+  //strip.setBrightness(200);
 
+  // for (int i = 0; i < strip.numPixels(); i+=3) {
+  //   strip.setPixelColor(i, strip.Color(255, 0, 0));
+  //   strip.setPixelColor(i+1, strip.Color(0, 255, 0));
+  //   strip.setPixelColor(i+2, strip.Color(0, 0, 255));
+  // }
   for (int i = 0; i < strip.numPixels(); i++) {
-    strip.setPixelColor(i, white);
+    strip.setPixelColor(i, strip.Color(255, 130, 120));
   }
-
   strip.show();
 }
 
