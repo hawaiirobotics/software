@@ -74,20 +74,20 @@ struct EncoderSettings {
 // 0, 13.89, 27.77, 0, -13.89, 0,
 EncoderSettings encoders[14] = {
 // arm 1
-{ -90.0, 90.0, -238.18, 1, 0x40,    361, 0, 0},
-{ -90.0, 67.2, -153.0, -1, 0x41,  361, 0, 13.89},
-{ 6.0, 175.0, -299.0, -1, 0x43,   361, 0, -27.77},
-{ -180.0, 180.0, -33.0, -1, 0x42, 361, 0, 0},
-{ 0.0, 180.0, -180.0, 1, 0x45,   361, 0, 13.89},
-{ -180.0, 180.0, -138.8, 1, 0x44, 361, 0, 0},
+{ -90.0, 90.0, -234.84, 1, 0x40,    361, 0, 0},
+{ -90.0, 67.2, -155.21, -1, 0x41,  361, 0, 13.89},
+{ 6.0, 175.0, -298.65, -1, 0x43,   361, 0, -27.77},
+{ -180.0, 180.0, -209.27, -1, 0x42, 361, 0, 0},
+{ 0.0, 180.0, -2.29, 1, 0x45,   361, 0, 13.89},
+{ -180.0, 180.0, -120.59, 1, 0x44, 361, 0, 0},
 { -140.4, 157.0, -204.35, 53.87, 0x46, 361, 0, 0}, // scale is the range of the teacher arm gripper
 // arm 2
-{ -90.0, 90.0, -332.23, 1, 0x40,    361, 0, 0},
-{ -90.0, 67.2, -258.5, -1, 0x41,  361, 0, 13.89},
-{ 6.0, 175.0, -280.63, -1, 0x43,   361, 0, -27.77},
-{ -180.0, 180.0, -26.9, -1, 0x42, 361, 0, 0},
-{ 0.0, 180.0, -256.03, 1, 0x45,   361, 0, 13.89},
-{ -180.0, 180.0, -63.11, 1, 0x44, 361, 0, 0},
+{ -90.0, 90.0, -328.54, 1, 0x40,    361, 0, 0},
+{ -90.0, 67.2, -261.56, -1, 0x41,  361, 0, 13.89},
+{ 6.0, 175.0, -280.28, -1, 0x43,   361, 0, -27.77},
+{ -180.0, 180.0, -207.07, -1, 0x42, 361, 0, 0},
+{ 0.0, 180.0, -76.02, 1, 0x45,   361, 0, 13.89},
+{ -180.0, 180.0, -251.28, 1, 0x44, 361, 0, 0},
 { -140.4, 157.0, -86.57, 52, 0x46, 361, 0, 0}, // scale is the range of the teacher arm gripper
 };
 
@@ -158,15 +158,6 @@ Adafruit_ST7789 tft = Adafruit_ST7789(TFT_CS, TFT_DC, TFT_RST);
 Adafruit_NeoPixel strip = Adafruit_NeoPixel(NUM_LEDS, LIGHTING_PIN, NEO_GRB + NEO_KHZ800);
 
 void setAllLEDsToWhite() {
-  // Set all the LEDs to white at 70% brightness
-  //uint32_t white = strip.Color(255, 255, 0); 
-  //strip.setBrightness(200);
-
-  // for (int i = 0; i < strip.numPixels(); i+=3) {
-  //   strip.setPixelColor(i, strip.Color(255, 0, 0));
-  //   strip.setPixelColor(i+1, strip.Color(0, 255, 0));
-  //   strip.setPixelColor(i+2, strip.Color(0, 0, 255));
-  // }
   for (int i = 0; i < strip.numPixels(); i++) {
     strip.setPixelColor(i, strip.Color(255, 130, 120));
   }
@@ -236,6 +227,19 @@ float mapAngle(EncoderSettings& encoder, float newAngle) {
   }
 }
 
+// print offsets if the arms need to be permanently updated
+void print_offsets() {
+  char buffer[200];
+
+  strncat(buffer, "SO,", 3);
+  for(int i = 0; i < 14; i++) {
+    sprintf(buffer + strlen(buffer), "%6.2f,", encoders[i].offset);
+  }
+  strncat(buffer, "EO", 2);
+
+  Serial.println(buffer);
+}
+
 // update the offset for a new zero position
 void update_offset() {
     float rawAngle;
@@ -251,19 +255,6 @@ void update_offset() {
       rawAngle = (readRegister(Wire1, encoders[i].address, 0x0C, 2) / 4096.0 * 360.0);
       encoders[i].offset = encoders[i].home_position - rawAngle;
     }
-}
-
-// print offsets if the arms need to be permanently updated
-void print_offsets() {
-  char buffer[200];
-
-  strncat(buffer, "SO,", 3);
-  for(int i = 0; i < 14; i++) {
-    sprintf(buffer + strlen(buffer), "%6.2f,", encoders[i].offset);
-  }
-  strncat(buffer, "EO", 2);
-
-  Serial.println(buffer);
 }
 
 void setup()
