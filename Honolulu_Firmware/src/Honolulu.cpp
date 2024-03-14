@@ -164,6 +164,13 @@ void setAllLEDsToWhite() {
   strip.show();
 }
 
+void setAllLEDsToRed() {
+  for (int i = 0; i < strip.numPixels(); i++) {
+    strip.setPixelColor(i, strip.Color(255, 0, 0));
+  }
+  strip.show();
+}
+
 const float p = 3.1415926;
 
 // update frequency in Hz
@@ -179,6 +186,10 @@ int readRegister(TwoWire w, int chip_addr, int reg_addr, int length) {
     w.write(reg_addr);
     w.endTransmission();
     w.requestFrom(chip_addr, length);
+
+    if (!w.available()) {  
+        return -1;
+    }
 
     while (w.available()) {
         result = (result << 8) + w.read();
@@ -255,6 +266,11 @@ void update_offset() {
       rawAngle = (readRegister(Wire1, encoders[i].address, 0x0C, 2) / 4096.0 * 360.0);
       encoders[i].offset = encoders[i].home_position - rawAngle;
     }
+}
+
+void EncoderErrorReadings() {
+  setAllLEDsToRed();  
+  exit(-1);
 }
 
 void setup()
@@ -502,11 +518,17 @@ void loop()
     for(int i = 0; i < 7; i++) {
       rawAngle = (readRegister(Wire2, encoders[i].address, 0x0C, 2) / 4096.0 * 360.0);
       arm1_joint_angles[i] = mapAngle(encoders[i], rawAngle)*PI/180.0;
+      if(rawAngle < 0){
+        EncoderErrorReadings();
+      }
     }
 
     for(int i = 7; i < 14; i++) {
       rawAngle = (readRegister(Wire1, encoders[i].address, 0x0C, 2) / 4096.0 * 360.0);
       arm2_joint_angles[i-7] = mapAngle(encoders[i], rawAngle)*PI/180.0;
+      if(rawAngle < 0){
+        EncoderErrorReadings();
+      }
     }
 
     // Send ARM1 angles back over serial
