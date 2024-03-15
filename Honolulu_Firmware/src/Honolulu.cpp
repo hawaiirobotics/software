@@ -171,6 +171,33 @@ void setAllLEDsToRed() {
   strip.show();
 }
 
+void setAllLEDsToRainbow() {
+    uint32_t firstStripLength = 87;
+    uint32_t secondStripLength = 89;
+    uint32_t thirdStripLength = 89;
+    uint32_t longestStrip = max(max(firstStripLength, secondStripLength), thirdStripLength);
+
+    long start = millis();
+    bool timeElapsed = false;
+    for (long firstPixelHue = 0; firstPixelHue < 5 * 65536 && !timeElapsed; firstPixelHue += 256) {
+        for (uint32_t i = 0; i < longestStrip; i++) { // For each pixel position in the longest strip...
+            int pixelHue = firstPixelHue + (i * 65536L / longestStrip);
+            uint32_t color = strip.gamma32(strip.ColorHSV(pixelHue));
+            if (i < firstStripLength) {strip.setPixelColor(i, color);}
+            if (i < secondStripLength) {strip.setPixelColor(firstStripLength + secondStripLength - 1 - i, color);}
+            if (i < thirdStripLength) {strip.setPixelColor(firstStripLength + secondStripLength + i, color);}
+            if (millis() - start >= 1000) {
+                timeElapsed = true;
+                break;
+            }
+        }
+        strip.show();
+        delay(10);
+    }
+}
+
+
+
 const float p = 3.1415926;
 
 // update frequency in Hz
@@ -406,10 +433,12 @@ void loop()
     static uint8_t reset_debounce = 0;
     
     // update the offsets when the reset button is held for 1s
-    if(reset_debounce >= 60) {
+    if(reset_debounce >= 30) {
       Serial.println("REGARDS");
       // exit(1);
       update_offset();
+      setAllLEDsToRainbow();
+      setAllLEDsToWhite();
       reset_debounce = 0;
     } else if(digitalRead(RESET_BTN) == LOW ) {
       reset_debounce++;
