@@ -3,6 +3,7 @@
 # Source the workspace
 source ./install/setup.bash
 
+export RCUTILS_LOGGING_MIN_SEVERITY=RCUTILS_LOG_SEVERITY_DEBUG
 # Run your launch file
 ros2 launch hawaii_teleop hawaii_teleop.launch.py $@ &
 ROS_NODES_PIDS=($!)

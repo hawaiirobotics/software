@@ -8,7 +8,7 @@ groups:
     
 singles:
   gripper:
-    operating_mode: position
+    operating_mode: pwm
     profile_type: velocity
     profile_velocity: 0
     profile_acceleration: 0

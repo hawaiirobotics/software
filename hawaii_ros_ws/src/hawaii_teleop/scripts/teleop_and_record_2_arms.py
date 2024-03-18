@@ -1,5 +1,6 @@
 import time
 import os
+import sys
 import h5py
 import numpy as np
 import rclpy
@@ -10,7 +11,7 @@ import threading
 import queue
 
 from real_env import make_real_env
-from teleop_utils import move_grippers, move_arms, setup_student_bot, get_arm_gripper_positions, get_arm_joint_positions
+from teleop_utils import move_grippers, move_arms, reboot_gripper, torque_on, get_arm_gripper_positions, get_arm_joint_positions
 from teleop_utils import DT, STUDENT_GRIPPER_JOINT_OPEN
 from cv_bridge import CvBridge
 
@@ -59,8 +60,10 @@ def get_joint_commands():
 
 def setup_student_arms(student_left, student_right):
     # reboot gripper motors, and set operating modes for all motors
-    setup_student_bot(student_left)
-    setup_student_bot(student_right)
+    reboot_gripper(student_left)
+    reboot_gripper(student_right)
+    torque_on(student_left)
+    torque_on(student_right)
 
     # move student arms to teacher arm position
     start_arm_qpos = get_joint_commands()
@@ -95,7 +98,7 @@ def print_dt_diagnosis(actual_dt_history):
     print(f'Avg freq: {freq_mean:.2f} Get action: {np.mean(get_action_time):.3f} Step env: {np.mean(step_env_time):.3f}')
     return freq_mean
 
-def capture_one_episode(max_timesteps, camera_names, dataset_dir, dataset_name, overwrite, using_sim, ser):
+def capture_one_episode(env, max_timesteps, camera_names, dataset_dir, dataset_name, overwrite, using_sim, ser):
 
     # saving dataset
     if not os.path.isdir(dataset_dir):
@@ -104,8 +107,6 @@ def capture_one_episode(max_timesteps, camera_names, dataset_dir, dataset_name, 
     if os.path.isfile(dataset_path) and not overwrite:
         print(f'Dataset already exist at \n{dataset_path}\nHint: set overwrite to True.')
         exit()
-
-    env = make_real_env()
 
     # setup student arms and move them to where teacher arms are
     setup_student_arms(env.student_left, env.student_right)
@@ -152,7 +153,7 @@ def capture_one_episode(max_timesteps, camera_names, dataset_dir, dataset_name, 
         actual_dt_history.append([t0, t1, t2])
 
     # Open student grippers
-    move_grippers([env.student_left, env.student_right], [STUDENT_GRIPPER_JOINT_OPEN]*2 , move_time=1.5)
+    # move_grippers([env.student_left, env.student_right], [STUDENT_GRIPPER_JOINT_OPEN]*2 , move_time=1.5) ### COMMENTING OUT FOR PWM
     print("DONE")
 
     # env.shutdown()
@@ -244,9 +245,11 @@ def capture_one_episode(max_timesteps, camera_names, dataset_dir, dataset_name, 
 if __name__=='__main__':
 
     os.nice(1)
+    env = make_real_env()
 
     overwrite = True
-    max_timesteps= 10*60 # 10 seconds
+    max_time = 100 # seconds
+    max_timesteps=60*max_time 
     dataset_name = "testing"
     dataset_dir = "testing"
     camera_names= ['cam_high', 'cam_front', 'cam_left', 'cam_right']
@@ -272,10 +275,15 @@ if __name__=='__main__':
     read_thread.start()
     
     while True:
-        is_healthy = capture_one_episode(max_timesteps, camera_names, dataset_dir, dataset_name, overwrite, using_sim, ser)
-        print("Finished session")
-        if is_healthy:
-            break
+        try:
+            is_healthy = capture_one_episode(env, max_timesteps, camera_names, dataset_dir, dataset_name, overwrite, using_sim, ser)
+            print("Finished session")
+            if is_healthy:
+                break
+        except KeyboardInterrupt:
+            print("Rebooting Grippers... ")
+            reboot_gripper(env.student_left)
+            reboot_gripper(env.student_right)
     print("DONE")
     stop_threads = True
     read_thread.join() # wait for thread to finish what it was doing

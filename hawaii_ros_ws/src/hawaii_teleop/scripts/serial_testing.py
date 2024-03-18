@@ -31,7 +31,7 @@ import time
 
 def read_from_teensy():
     # Serial port configuration
-    port = "/dev/ttyACM0"
+    port = "/dev/tty_TEACHER_ARMS"
     baud_rate = 250000
 
     try:

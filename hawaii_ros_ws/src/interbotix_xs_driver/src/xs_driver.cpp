@@ -30,10 +30,15 @@
 
 #include <string>
 #include <vector>
+#include <numeric>
 #include <memory>
 #include <mutex>
 #include <thread>
 #include <unordered_map>
+#include <iostream>
+#include <fstream>
+#include <spdlog/spdlog.h>
+#include <spdlog/sinks/basic_file_sink.h>
 
 namespace interbotix_xs
 {
@@ -80,6 +85,26 @@ InterbotixDriverXS::InterbotixDriverXS(
   init_operating_modes();
   init_controlItems();
   XSLOG_INFO("Interbotix X-Series Driver is up!");
+
+  // Find the last underscore '_'
+    size_t underscorePos = filepath_mode_configs.find_last_of('_');
+
+    // Find the last dot '.'
+    size_t dotPos = filepath_mode_configs.find_last_of('.');
+
+    // Extract the substring
+    std::string item="";
+    if (underscorePos != std::string::npos && dotPos != std::string::npos) {
+        item =  filepath_mode_configs.substr(underscorePos + 1, dotPos - underscorePos - 1);
+    } else {
+        item =  ""; // Return empty string if not found
+    }
+
+  XSLOG_INFO(filepath_mode_configs.c_str());
+  std::string log_file = "log"+item+".txt";
+  auto logger = spdlog::basic_logger_mt("basic_logger", log_file, std::ofstream::out);
+  spdlog::set_default_logger(logger);
+  spdlog::set_level(spdlog::level::info); // Set the logging level
 }
 
 bool InterbotixDriverXS::set_operating_modes(
@@ -519,8 +544,16 @@ bool InterbotixDriverXS::write_joint_command(
   const std::string & name,
   float command)
 {
+  static float Kp = 500.0f;
+  static float PWM_grip_limit = -300.0f;
+  static float load_limit = -600.0f;
+  static float vel_limit = 0.001f;
   static float safe_gripper_position = 0.0f;
   static float prev_gripper_command = 4.0f;
+  static float prev_gripper_position = 0.0f;
+  static int velocity_buffer_size = 10;
+  static std::vector<float> velocity_hist(velocity_buffer_size, 0); // Save history of last 10 deltas
+  static int message_rejected = 0;
   
   const std::string mode = motor_map[name].mode;
   if (
@@ -535,40 +568,72 @@ bool InterbotixDriverXS::write_joint_command(
       command = convert_linear_position_to_radian(name, command);
     }
     if (name == "gripper") {
-      // Vectors to store the joint states
-      // for (const auto & joint_name : get_group_info("gripper")->joint_names){
-      //   printf("%s\n", joint_name);
-      // }
-      std::vector<float> positions;
-      std::vector<float> velocities;
-      std::vector<float> effort;
-      bool success = get_joint_states("all", &positions, &velocities, &effort);
-      if (!success) {
-        XSLOG_ERROR("Could not get joint states");
+
+      float current_pos = read_gripper_joint_state();
+      // float present_load = prev_gripper_command - current_pos;
+      float present_load = get_gripper_present_load();
+      float delta = current_pos - prev_gripper_position;
+
+      spdlog::info("Present Load: {}", present_load);
+      spdlog::info("Current Position: {}", current_pos);
+      spdlog::info("Command: {}", command);
+      spdlog::info("Velocity: {}", delta);
+
+      if (present_load > load_limit) {
+        safe_gripper_position = current_pos;
+      }
+      if (present_load < load_limit && abs(delta) < vel_limit && command <= safe_gripper_position) {
+        //not okay to proceed with command
+        XSLOG_ERROR("Command Rejected: Present Load '%f' on Motor '%s' too high, Present Pos: %f, Commanded Pos: %f.", present_load, name.c_str(), current_pos, command);
+        message_rejected = 1;
+        spdlog::info("Message Rejected: {}", message_rejected);
         return false;
       }
-      float current_pos = positions.at(6);
-      float present_load = prev_gripper_command - current_pos;
-      // get_gripper_present_load();
-      printf("Present_Load: %f\n", present_load);
-      float load_limit = -0.6;
-      if (present_load > load_limit) {
-        if (!positions.empty()) {
-          safe_gripper_position = current_pos;
-        }
+      else {
+        message_rejected = 0;
+        spdlog::info("Message Rejected: {}", message_rejected);
       }
       prev_gripper_command = command;
-      if (present_load < load_limit && command <= safe_gripper_position) {
-        //not okay to proceed with command
-        XSLOG_ERROR("Command Rejected: Present Load '%d' on Motor '%s' too high, Present Pos: %f, Commanded Pos: %f.", present_load, name.c_str(), positions.at(6), command);
-          return false;
-      }  
+      prev_gripper_position = current_pos;
     }
-    XSLOG_DEBUG(
-      "ID: %d, writing %s command %f.",
-      motor_map[name].motor_id, mode.c_str(), command);
+    // XSLOG_DEBUG(
+    //   "ID: %d, writing %s command %f.",
+    //   motor_map[name].motor_id, mode.c_str(), command);
     // write position command
     dxl_wb.goalPosition(motor_map[name].motor_id, command);
+  } else if (mode == mode::PWM) {
+      if (name == "gripper") {
+        float current_pos = read_gripper_joint_state();
+        float present_load = get_gripper_present_load();
+        float delta = current_pos - prev_gripper_position;
+        velocity_hist.push_back(delta);
+        velocity_hist.erase(velocity_hist.begin());
+        float velocity = std::accumulate(velocity_hist.begin(), velocity_hist.end(), 0.0f) / velocity_buffer_size;
+
+        float pos_error = command - current_pos;
+        float PWM_command = Kp * pos_error;
+        if (present_load < load_limit && abs(velocity) < vel_limit) { // if gripper hits object and slows down, limit PWM
+          PWM_command = PWM_command < PWM_grip_limit ? PWM_grip_limit : PWM_command;
+          message_rejected = 1;
+          XSLOG_DEBUG("SATURATING Commanded PWM: '%f', Present Load: '%f', Velocity: '%f'", PWM_command, present_load, velocity);
+        }
+        else {
+          message_rejected = 0;
+          XSLOG_DEBUG("FREE       Commanded PWM: '%f', Present Load: '%f', Velocity: '%f'", PWM_command, present_load, velocity);
+        }
+        
+        spdlog::info("Present Load: {}", present_load);
+        spdlog::info("Current Position: {}", current_pos);
+        spdlog::info("Command: {}", PWM_command);
+        spdlog::info("Velocity: {}", velocity);
+        spdlog::info("Message Rejected: {}", message_rejected);
+        // write pwm command
+        dxl_wb.itemWrite(motor_map[name].motor_id, "Goal_PWM", int32_t(PWM_command));
+        prev_gripper_position = current_pos;
+      }
+      else {
+        dxl_wb.itemWrite(motor_map[name].motor_id, "Goal_PWM", int32_t(command));
+      }
   } else if (mode == mode::VELOCITY) {
     // position velocity case
     XSLOG_DEBUG(
@@ -584,13 +649,6 @@ bool InterbotixDriverXS::write_joint_command(
     // write current command
     dxl_wb.itemWrite(
       motor_map[name].motor_id, "Goal_Current", dxl_wb.convertCurrent2Value(command));
-  } else if (mode == mode::PWM) {
-    // pwm current case
-    XSLOG_DEBUG(
-      "ID: %d, writing %s command %f.",
-      motor_map[name].motor_id, mode.c_str(), command);
-    // write pwm command
-    dxl_wb.itemWrite(motor_map[name].motor_id, "Goal_PWM", int32_t(command));
   } else {
     // invalid mode
     XSLOG_ERROR(
@@ -1409,6 +1467,46 @@ void InterbotixDriverXS::read_joint_states()
   }
 }
 
+float InterbotixDriverXS::read_gripper_joint_state()
+{
+  std::lock_guard<std::mutex> guard(_mutex_js);
+  const char * log;
+
+  int32_t position = 0;
+  uint8_t Id = motor_map["gripper"].motor_id;
+
+  if (dxl_wb.getProtocolVersion() == 2.0f) {
+    // Checks if data can be sent properly
+    if (!dxl_wb.syncRead(
+        SYNC_READ_HANDLER_FOR_PRESENT_POSITION_VELOCITY_CURRENT,
+        all_ptr->joint_ids.data(),
+        all_ptr->joint_num,
+        &log))
+    {
+      XSLOG_ERROR("%s", log);
+    }
+
+    // Gets present position of gripper servo
+    if (!dxl_wb.getSyncReadData(
+        SYNC_READ_HANDLER_FOR_PRESENT_POSITION_VELOCITY_CURRENT,
+        &Id,         //get_group_info("gripper")->joint_ids.data(), /// FIX THIS 
+        1,
+        control_items["Present_Position"]->address,
+        control_items["Present_Position"]->data_length,
+        &position,
+        &log))
+    {
+      XSLOG_ERROR("%s", log);
+    }
+
+    float fPosition = 0;
+
+    fPosition = dxl_wb.convertValue2Radian(motor_map["gripper"].motor_id, position);
+    return fPosition;
+  }
+  return 0.0;
+}
+
 std::vector<std::string> InterbotixDriverXS::get_all_joint_names()
 {
   return all_ptr->joint_names;
@@ -1492,8 +1590,8 @@ int16_t InterbotixDriverXS::get_gripper_present_load() {
         XSLOG_ERROR("%s", log);
         return 0;
     } else {
-        XSLOG_DEBUG(
-            "ID: %d, reading reg: '%s', value: %d.", motor_map[name].motor_id, reg.c_str(), value_32);
+        // XSLOG_DEBUG(
+        //     "ID: %d, reading reg: '%s', value: %d.", motor_map[name].motor_id, reg.c_str(), value_32);
     }
 
     // Cast the 32-bit value to a 16-bit value

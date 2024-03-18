@@ -196,9 +196,8 @@ def move_grippers(bot_list, target_pose_list, move_time):
             bot.gripper.core.pub_single.publish(gripper_command)
         time.sleep(DT)
 
-def setup_student_bot(bot):
+def reboot_gripper(bot):
     bot.core.robot_reboot_motors("single", "gripper", True)
-    torque_on(bot)
 
 def torque_off(bot):
     bot.core.robot_torque_enable("group", "arm", False)

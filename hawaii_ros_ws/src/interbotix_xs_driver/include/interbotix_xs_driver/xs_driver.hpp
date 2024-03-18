@@ -430,6 +430,9 @@ private:
 
   /// @brief Updates the joint states from the DYNAMIXELs
   void read_joint_states();
+  
+  /// @brief Updates the joint states from the DYNAMIXELs
+  float read_gripper_joint_state();
 };
 
 }  // namespace interbotix_xs
