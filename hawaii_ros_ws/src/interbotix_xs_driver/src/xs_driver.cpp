@@ -545,8 +545,7 @@ bool InterbotixDriverXS::write_joint_command(
   float command)
 {
   static float Kp = 500.0f;
-  static float PWM_grip_limit = -300.0f;
-  static float load_limit = -600.0f;
+  static float load_limit = -300.0f;
   static float vel_limit = 0.001f;
   static float safe_gripper_position = 0.0f;
   static float prev_gripper_command = 4.0f;
@@ -569,7 +568,7 @@ bool InterbotixDriverXS::write_joint_command(
     }
     if (name == "gripper") {
 
-      float current_pos = read_gripper_joint_state();
+      float current_pos = read_gripper_position();
       // float present_load = prev_gripper_command - current_pos;
       float present_load = get_gripper_present_load();
       float delta = current_pos - prev_gripper_position;
@@ -603,7 +602,8 @@ bool InterbotixDriverXS::write_joint_command(
     dxl_wb.goalPosition(motor_map[name].motor_id, command);
   } else if (mode == mode::PWM) {
       if (name == "gripper") {
-        float current_pos = read_gripper_joint_state();
+        float current_pos = read_gripper_position();
+        float current_vel = read_gripper_velocity();
         float present_load = get_gripper_present_load();
         float delta = current_pos - prev_gripper_position;
         velocity_hist.push_back(delta);
@@ -613,7 +613,7 @@ bool InterbotixDriverXS::write_joint_command(
         float pos_error = command - current_pos;
         float PWM_command = Kp * pos_error;
         if (present_load < load_limit && abs(velocity) < vel_limit) { // if gripper hits object and slows down, limit PWM
-          PWM_command = PWM_command < PWM_grip_limit ? PWM_grip_limit : PWM_command;
+          PWM_command = PWM_command < load_limit ? load_limit : PWM_command;
           message_rejected = 1;
           XSLOG_DEBUG("SATURATING Commanded PWM: '%f', Present Load: '%f', Velocity: '%f'", PWM_command, present_load, velocity);
         }
@@ -626,6 +626,7 @@ bool InterbotixDriverXS::write_joint_command(
         spdlog::info("Current Position: {}", current_pos);
         spdlog::info("Command: {}", PWM_command);
         spdlog::info("Velocity: {}", velocity);
+        spdlog::info("Sensed Velocity: {}", current_vel);
         spdlog::info("Message Rejected: {}", message_rejected);
         // write pwm command
         dxl_wb.itemWrite(motor_map[name].motor_id, "Goal_PWM", int32_t(PWM_command));
@@ -1467,46 +1468,6 @@ void InterbotixDriverXS::read_joint_states()
   }
 }
 
-float InterbotixDriverXS::read_gripper_joint_state()
-{
-  std::lock_guard<std::mutex> guard(_mutex_js);
-  const char * log;
-
-  int32_t position = 0;
-  uint8_t Id = motor_map["gripper"].motor_id;
-
-  if (dxl_wb.getProtocolVersion() == 2.0f) {
-    // Checks if data can be sent properly
-    if (!dxl_wb.syncRead(
-        SYNC_READ_HANDLER_FOR_PRESENT_POSITION_VELOCITY_CURRENT,
-        all_ptr->joint_ids.data(),
-        all_ptr->joint_num,
-        &log))
-    {
-      XSLOG_ERROR("%s", log);
-    }
-
-    // Gets present position of gripper servo
-    if (!dxl_wb.getSyncReadData(
-        SYNC_READ_HANDLER_FOR_PRESENT_POSITION_VELOCITY_CURRENT,
-        &Id,         //get_group_info("gripper")->joint_ids.data(), /// FIX THIS 
-        1,
-        control_items["Present_Position"]->address,
-        control_items["Present_Position"]->data_length,
-        &position,
-        &log))
-    {
-      XSLOG_ERROR("%s", log);
-    }
-
-    float fPosition = 0;
-
-    fPosition = dxl_wb.convertValue2Radian(motor_map["gripper"].motor_id, position);
-    return fPosition;
-  }
-  return 0.0;
-}
-
 std::vector<std::string> InterbotixDriverXS::get_all_joint_names()
 {
   return all_ptr->joint_names;
@@ -1601,5 +1562,83 @@ int16_t InterbotixDriverXS::get_gripper_present_load() {
     return value_16;
 }
 
+
+float InterbotixDriverXS::read_gripper_position()
+{
+  std::lock_guard<std::mutex> guard(_mutex_js);
+  const char * log;
+
+  int32_t position = 0;
+  uint8_t Id = motor_map["gripper"].motor_id;
+
+  if (dxl_wb.getProtocolVersion() == 2.0f) {
+    // Checks if data can be sent properly
+    if (!dxl_wb.syncRead(
+        SYNC_READ_HANDLER_FOR_PRESENT_POSITION_VELOCITY_CURRENT,
+        all_ptr->joint_ids.data(),
+        all_ptr->joint_num,
+        &log))
+    {
+      XSLOG_ERROR("%s", log);
+    }
+
+    // Gets present position of gripper servo
+    if (!dxl_wb.getSyncReadData(
+        SYNC_READ_HANDLER_FOR_PRESENT_POSITION_VELOCITY_CURRENT,
+        &Id,
+        1,
+        control_items["Present_Position"]->address,
+        control_items["Present_Position"]->data_length,
+        &position,
+        &log))
+    {
+      XSLOG_ERROR("%s", log);
+    }
+
+    float fPosition = 0;
+
+    fPosition = dxl_wb.convertValue2Radian(motor_map["gripper"].motor_id, position);
+    return fPosition;
+  }
+  return 0.0;
+}
+
+float InterbotixDriverXS::read_gripper_velocity()
+{
+  std::lock_guard<std::mutex> guard(_mutex_js);
+  const char * log;
+
+  uint32_t velocity = 0;
+  float fvelocity = 0.0;
+  uint8_t Id = motor_map["gripper"].motor_id;
+
+  if (dxl_wb.getProtocolVersion() == 2.0f) {
+    // Checks if data can be sent properly
+    if (!dxl_wb.syncRead(
+        SYNC_READ_HANDLER_FOR_PRESENT_POSITION_VELOCITY_CURRENT,
+        all_ptr->joint_ids.data(),
+        all_ptr->joint_num,
+        &log))
+    {
+      XSLOG_ERROR("%s", log);
+    }
+
+    // Gets present position of gripper servo
+    if (!dxl_wb.getSyncReadData(
+        SYNC_READ_HANDLER_FOR_PRESENT_POSITION_VELOCITY_CURRENT,
+        &Id,
+        1,
+        control_items["Present_Velocity"]->address,
+        control_items["Present_Velocity"]->data_length,
+        &velocity,
+        &log))
+    {
+      XSLOG_ERROR("%s", log);
+    }
+    fvelocity = static_cast<float>(static_cast<int32_t>(velocity));
+    return velocity;
+  }
+  return 0.0;
+}
 
 }  // namespace interbotix_xs

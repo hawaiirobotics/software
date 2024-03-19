@@ -431,8 +431,11 @@ private:
   /// @brief Updates the joint states from the DYNAMIXELs
   void read_joint_states();
   
-  /// @brief Updates the joint states from the DYNAMIXELs
-  float read_gripper_joint_state();
+  /// @brief Updates the gripper position
+  float read_gripper_position();
+
+  /// @brief Updates the gripper velocity
+  float read_gripper_velocity();
 };
 
 }  // namespace interbotix_xs

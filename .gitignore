@@ -3,3 +3,4 @@
 /hawaii_ros_ws/build/
 /hawaii_ros_ws/log/
 .DS_Store
+*.hdf5

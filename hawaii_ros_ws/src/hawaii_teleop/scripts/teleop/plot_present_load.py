@@ -57,8 +57,8 @@ def calculate_moving_average(data, window_size):
     return np.convolve(data, np.ones(window_size)/window_size, mode='valid')
 
 # Paths to the log files
-log_file_path_right = '../../../logright.txt'
-log_file_path_left = '../../../logleft.txt'
+log_file_path_right = '../../../../logright.txt'
+log_file_path_left = '../../../../logleft.txt'
 
 # Process both log files
 df_pivot_right = process_log_file(log_file_path_right)
