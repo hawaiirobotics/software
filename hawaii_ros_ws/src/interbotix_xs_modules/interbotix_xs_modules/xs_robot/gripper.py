@@ -116,9 +116,9 @@ class InterbotixGripperXSInterface:
         self.left_finger_lower_limit = self.gripper_info.joint_lower_limits[0]
         self.left_finger_upper_limit = self.gripper_info.joint_upper_limits[0]
 
-        if self.gripper_info.mode not in ('position'):
+        if self.gripper_info.mode not in ('position', 'pwm'):
             self.core.get_logger().error(
-                "Please set the gripper's 'operating mode' to 'position."
+                "1 Please set the gripper's 'operating mode' to 'position."
             )
             sys.exit(1)
 

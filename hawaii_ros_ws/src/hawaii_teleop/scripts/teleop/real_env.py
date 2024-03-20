@@ -5,7 +5,6 @@ import matplotlib.pyplot as plt
 import dm_env
 import rclpy
 from rclpy.executors import MultiThreadedExecutor
-import multiprocessing
 
 from teleop_utils import Recorder, ImageRecorder
 from threading import Thread
@@ -45,11 +44,6 @@ class RealEnv:
         self.gripper_command = JointSingleCommand(name="gripper")
 
         self.start()
-        # self.image_queue = multiprocessing.Queue()
-        # self.request_event = multiprocessing.Event()
-        # image_recorder_process = multiprocessing.Process(target=self.run_image_recorder, args=(self.image_queue, self.request_event))
-        # image_recorder_process.start()
-        # print("done")
 
     def start(self) -> None:
         """Start a background thread that builds and spins an executor."""
@@ -66,7 +60,7 @@ class RealEnv:
         self.ex = MultiThreadedExecutor()
         self.ex.add_node(self.recorder_left)
         self.ex.add_node(self.recorder_right)
-        self.ex.add_node(self.image_recorder) #10 fps = 60hz, 30 fps = 30 hz
+        self.ex.add_node(self.image_recorder)
         self.ex.spin()
 
     def shutdown(self) -> None:

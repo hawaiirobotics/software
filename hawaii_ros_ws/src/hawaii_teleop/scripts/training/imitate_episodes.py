@@ -21,6 +21,11 @@ from sim_env import BOX_POSE
 import IPython
 e = IPython.embed
 
+import sys
+
+# Add the parent directory to the Python path
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
 ###pip3 install torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/cu118
 
 def main(args):
@@ -180,11 +185,16 @@ def eval_bc(config, ckpt_name, save_episode=True):
     post_process = lambda a: a * stats['action_std'] + stats['action_mean']
 
     # load environment
+    print("before making environment")
     if real_robot:
-        from teleop.teleop_utils import move_grippers # requires aloha
-        from teleop.real_env import make_real_env # requires aloha
-        env = make_real_env(init_node=True)
+        teleop_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '../teleop'))
+        print(teleop_dir)
+        sys.path.insert(0, teleop_dir)
+        from teleop.teleop_utils import move_grippers, get_arm_joint_positions, get_arm_gripper_positions
+        from teleop.real_env import make_real_env
+        env = make_real_env()
         env_max_reward = 0
+        print("after made env")
     else:
         from sim_env import make_sim_env
         env = make_sim_env(task_name)
@@ -200,6 +210,7 @@ def eval_bc(config, ckpt_name, save_episode=True):
     num_rollouts = 50
     episode_returns = []
     highest_rewards = []
+    print("before rollout loop")
     for rollout_id in range(num_rollouts):
         rollout_id += 0
         ### set task
@@ -225,6 +236,17 @@ def eval_bc(config, ckpt_name, save_episode=True):
         qpos_list = []
         target_qpos_list = []
         rewards = []
+
+        
+        left_joint_positions = np.array(get_arm_joint_positions(env.student_left))
+        left_gripper_position = get_arm_gripper_positions(env.student_left)
+
+        right_joint_positions = np.array(get_arm_joint_positions(env.student_right))
+        right_gripper_position = get_arm_gripper_positions(env.student_right)
+
+        prev_command = np.concatenate((left_joint_positions, [left_gripper_position],
+                                    right_joint_positions, [right_gripper_position]))
+        threshold = 0.2
         with torch.inference_mode():
             for t in range(max_timesteps):
                 ### update onscreen render and wait for DT
@@ -271,13 +293,24 @@ def eval_bc(config, ckpt_name, save_episode=True):
                 action = post_process(raw_action)
                 target_qpos = action
 
+                 # Validate action
+                for index, (new_pos, prev_pos) in enumerate(zip(action, prev_command)):
+                    arm = "left"
+                    if abs(prev_pos - new_pos) > threshold:
+                        if index > 7:
+                            arm = "right"
+                            index = index % 8  # Adjusted for right arm indexing
+                        print(f"Cancelling Teleop: command {new_pos} to joint {index + 1} on {arm} arm is too far from the current pos {prev_pos}.")
+                        return False
+                prev_command = action
+
                 ### step the environment
-                ts = env.step(target_qpos)
+                # ts = env.step(target_qpos)
 
                 ### for visualization
                 qpos_list.append(qpos_numpy)
                 target_qpos_list.append(target_qpos)
-                rewards.append(ts.reward)
+                rewards.append(env.get_reward())
 
             plt.close()
         if real_robot:
@@ -378,6 +411,7 @@ def train_bc(train_dataloader, val_dataloader, config):
         for k, v in epoch_summary.items():
             summary_string += f'{k}: {v.item():.3f} '
         print(summary_string)
+        
 
         if epoch % 100 == 0:
             ckpt_path = os.path.join(ckpt_dir, f'policy_epoch_{epoch}_seed_{seed}.ckpt')

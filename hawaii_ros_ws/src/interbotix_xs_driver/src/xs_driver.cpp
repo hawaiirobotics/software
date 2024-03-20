@@ -546,7 +546,7 @@ bool InterbotixDriverXS::write_joint_command(
 {
   static float Kp = 500.0f;
   static float load_limit = -300.0f;
-  static float vel_limit = 0.001f;
+  static float vel_limit = 25.0f;
   static float safe_gripper_position = 0.0f;
   static float prev_gripper_command = 4.0f;
   static float prev_gripper_position = 0.0f;
@@ -612,7 +612,7 @@ bool InterbotixDriverXS::write_joint_command(
 
         float pos_error = command - current_pos;
         float PWM_command = Kp * pos_error;
-        if (present_load < load_limit && abs(velocity) < vel_limit) { // if gripper hits object and slows down, limit PWM
+        if (present_load < load_limit && abs(current_vel) < vel_limit) { // if gripper hits object and slows down, limit PWM
           PWM_command = PWM_command < load_limit ? load_limit : PWM_command;
           message_rejected = 1;
           XSLOG_DEBUG("SATURATING Commanded PWM: '%f', Present Load: '%f', Velocity: '%f'", PWM_command, present_load, velocity);
@@ -1608,7 +1608,7 @@ float InterbotixDriverXS::read_gripper_velocity()
   std::lock_guard<std::mutex> guard(_mutex_js);
   const char * log;
 
-  uint32_t velocity = 0;
+  int32_t velocity = 0;
   float fvelocity = 0.0;
   uint8_t Id = motor_map["gripper"].motor_id;
 
@@ -1635,7 +1635,7 @@ float InterbotixDriverXS::read_gripper_velocity()
     {
       XSLOG_ERROR("%s", log);
     }
-    fvelocity = static_cast<float>(static_cast<int32_t>(velocity));
+    fvelocity = static_cast<float>(velocity);
     return velocity;
   }
   return 0.0;

@@ -12,8 +12,9 @@ import queue
 
 from real_env import make_real_env
 from teleop_utils import move_grippers, move_arms, reboot_gripper, torque_on, get_arm_gripper_positions, get_arm_joint_positions
-from teleop_utils import DT, STUDENT_GRIPPER_JOINT_OPEN
+from teleop_utils import STUDENT_GRIPPER_JOINT_OPEN
 from cv_bridge import CvBridge
+from constants import TASK_CONFIGS
 
 # Create a shared queue
 # the queue can grow infinitely if max_size isn't set. May need to do that eventually
@@ -122,7 +123,14 @@ def capture_one_episode(env, max_timesteps, camera_names, dataset_dir, dataset_n
     actual_dt_history = []
     # for t in tqdm(range(max_timesteps)):
 
-    prev_command = get_arm_joint_positions(env.student_left)+ get_arm_joint_positions(env.student_right)
+    left_joint_positions = np.array(get_arm_joint_positions(env.student_left))
+    left_gripper_position = get_arm_gripper_positions(env.student_left)
+
+    right_joint_positions = np.array(get_arm_joint_positions(env.student_right))
+    right_gripper_position = get_arm_gripper_positions(env.student_right)
+
+    prev_command = np.concatenate((left_joint_positions, [left_gripper_position],
+                                   right_joint_positions, [right_gripper_position]))
     threshold = 0.2
     for t in range(max_timesteps):
         if t %100 == 0:
@@ -133,17 +141,15 @@ def capture_one_episode(env, max_timesteps, camera_names, dataset_dir, dataset_n
         #     env.image_recorder.print_profiling_stats()
 
         # Validate action
-        # for index, (prev_pos, new_pos) in enumerate(zip(action, prev_command)):
-        #     arm = "left"
-        #     print(prev_pos)
-        #     print(new_pos)
-        #     if abs(prev_pos - new_pos) > threshold:
-        #         if index > 7:
-        #             arm = "right"
-        #             index = index % 8  # Adjusted for right arm indexing
-        #         print(f"Cancelling Teleop: command {new_pos} to joint {index + 1} on {arm} arm is too far from the current pos {prev_pos}.")
-        #         return False
-
+        for index, (new_pos, prev_pos) in enumerate(zip(action, prev_command)):
+            arm = "left"
+            if abs(prev_pos - new_pos) > threshold and index != 6 and index != 13: # ignore grippers
+                if index > 6:
+                    arm = "right"
+                    index = index % 7  # Adjusted for right arm indexing
+                print(f"Cancelling Teleop: command {new_pos} to joint {index + 1} on {arm} arm is too far from the current pos {prev_pos}.")
+                return False
+        prev_command = action
 
         t1 = time.time() #
         ts = env.step(action)
@@ -158,10 +164,10 @@ def capture_one_episode(env, max_timesteps, camera_names, dataset_dir, dataset_n
 
     # env.shutdown()
         
-    print_dt_diagnosis(actual_dt_history)
-    # if freq_mean < 42 and not using_sim:
-    #     print("Sampling frequency is too low. Should be >= 42")
-    #     return False
+    freq_mean = print_dt_diagnosis(actual_dt_history)
+    if freq_mean < 42 and not using_sim:
+        print("Sampling frequency is too low. Should be >= 42")
+        return False
     
     """
     For each timestep:
@@ -176,18 +182,15 @@ def capture_one_episode(env, max_timesteps, camera_names, dataset_dir, dataset_n
     - effort                (14,)         'float64'
     - action                (14,)         'float64'
     """
-    print("before data dict")
     data_dict = {
         '/observations/qpos': [],
         '/observations/qvel': [],
         '/observations/effort': [],
         '/action': [],
     }
-    print("before for cam_name")
     for cam_name in camera_names:
         data_dict[f'/observations/images/{cam_name}'] = []
 
-    print("before while actions")
     bridge = CvBridge()
     while actions:
         action = actions.pop(0)
@@ -197,7 +200,7 @@ def capture_one_episode(env, max_timesteps, camera_names, dataset_dir, dataset_n
         data_dict['/observations/effort'].append(ts.observation['effort'])
         data_dict['/action'].append(action)
         for cam_name in camera_names:
-            data_dict[f'/observations/images/{cam_name}'].append(bridge.imgmsg_to_cv2(ts.observation['images'][cam_name], desired_encoding='passthrough'))
+            data_dict[f'/observations/images/{cam_name}'].append(cv2.cvtColor(bridge.imgmsg_to_cv2(ts.observation['images'][cam_name], desired_encoding='passthrough'),cv2.COLOR_YUV2RGB_YUYV))
    
     # yuv_image_data = data_dict[f'/observations/images/cam_high'][0]
     # Convert YUV422 to BGR using OpenCV
@@ -209,15 +212,15 @@ def capture_one_episode(env, max_timesteps, camera_names, dataset_dir, dataset_n
     # cv2.destroyAllWindows()
 
     # HDF5
-    print("before making hdf5 file")
+    print("Making hdf5 file.")
     t0 = time.time()
     with h5py.File(dataset_path + '.hdf5', 'w', rdcc_nbytes=1024**2*2) as root:
         root.attrs['sim'] = False
         obs = root.create_group('observations')
         image = obs.create_group('images')
         for cam_name in camera_names:
-            _ = image.create_dataset(cam_name, (max_timesteps, 480, 640, 2), dtype='uint8', #have 2 channels because of YUV422 encoding
-                                     chunks=(1, 480, 640, 2), )
+            _ = image.create_dataset(cam_name, (max_timesteps, 480, 640, 3), dtype='uint8', #have 2 channels because of YUV422 encoding
+                                     chunks=(1, 480, 640, 3), )
         _ = obs.create_dataset('qpos', (max_timesteps, 14))
         if using_sim :
             _ = obs.create_dataset('qvel', (max_timesteps, 0))
@@ -241,6 +244,15 @@ def capture_one_episode(env, max_timesteps, camera_names, dataset_dir, dataset_n
 
     return True
 
+def get_auto_index(dataset_dir, dataset_name_prefix = '', data_suffix = 'hdf5'):
+    max_idx = 1000
+    if not os.path.isdir(dataset_dir):
+        os.makedirs(dataset_dir)
+    for i in range(max_idx+1):
+        if not os.path.isfile(os.path.join(dataset_dir, f'{dataset_name_prefix}episode_{i}.{data_suffix}')):
+            return i
+    raise Exception(f"Error getting auto index, or more than {max_idx} episodes")
+
 
 if __name__=='__main__':
 
@@ -248,13 +260,21 @@ if __name__=='__main__':
     env = make_real_env()
 
     overwrite = True
-    max_time = 100 # seconds
-    max_timesteps=60*max_time 
-    dataset_name = "testing"
-    dataset_dir = "testing"
-    camera_names= ['cam_high', 'cam_front', 'cam_left', 'cam_right']
+    # max_time = 100 # seconds
+    # max_timesteps=60*max_time 
     using_sim = False
     stop_threads = False
+
+    task_config = TASK_CONFIGS["default_task"]
+    dataset_dir = task_config['dataset_dir']
+    max_timesteps = task_config['episode_len']
+    camera_names = task_config['camera_names']
+
+    episode_idx = get_auto_index(dataset_dir)
+    overwrite = True
+
+    dataset_name = f'episode_{episode_idx}'
+    print(dataset_name + '\n')
 
     # Serial port configuration
     ser_port = '/dev/tty_TEACHER_ARMS' 
@@ -284,7 +304,6 @@ if __name__=='__main__':
             print("Rebooting Grippers... ")
             reboot_gripper(env.student_left)
             reboot_gripper(env.student_right)
-    print("DONE")
     stop_threads = True
     read_thread.join() # wait for thread to finish what it was doing
     rclpy.shutdown()
