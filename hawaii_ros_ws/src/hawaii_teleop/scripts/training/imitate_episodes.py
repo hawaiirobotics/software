@@ -100,7 +100,7 @@ def main(args):
     }
 
     if is_eval:
-        ckpt_names = [f'tape_pass_policy.ckpt']
+        ckpt_names = [f'policy_best.ckpt']
         results = []
         for ckpt_name in ckpt_names:
             success_rate, avg_return = eval_bc(config, ckpt_name, save_episode=True)
@@ -211,7 +211,7 @@ def eval_bc(config, ckpt_name, save_episode=True):
         query_frequency = 1
         num_queries = policy_config['num_queries']
 
-    max_timesteps = int(max_timesteps * 0.5) # may increase for real-world tasks
+    max_timesteps = int(max_timesteps * 1) # may increase for real-world tasks
 
     num_rollouts = 1
     episode_returns = []
