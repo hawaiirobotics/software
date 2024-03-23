@@ -36,7 +36,6 @@ def main(args):
     set_seed(1)
     # command line parameters
     is_eval = args['eval']
-    ckpt_dir = args['ckpt_dir']
     policy_class = args['policy_class']
     onscreen_render = args['onscreen_render']
     task_name = args['task_name']
@@ -44,6 +43,8 @@ def main(args):
     batch_size_val = args['batch_size']
     num_epochs = args['num_epochs']
 
+    ckpt_dir = os.path.join("saved_models",task_name)
+    print(ckpt_dir)
     # get task parameters
     is_sim = task_name[:4] == 'sim_'
     if is_sim:
@@ -473,7 +474,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--eval', action='store_true')
     parser.add_argument('--onscreen_render', action='store_true')
-    parser.add_argument('--ckpt_dir', action='store', type=str, help='ckpt_dir', required=True)
+    # parser.add_argument('--ckpt_dir', action='store', type=str, help='ckpt_dir', required=True)
     parser.add_argument('--policy_class', action='store', type=str, help='policy_class, capitalize', required=True)
     parser.add_argument('--task_name', action='store', type=str, help='task_name', required=True)
     parser.add_argument('--batch_size', action='store', type=int, help='batch_size', required=True)
