@@ -10,6 +10,8 @@ import serial
 import threading
 import queue
 
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__))))
+
 from real_env import make_real_env
 from teleop_utils import move_grippers, move_arms, reboot_gripper, torque_on, get_arm_gripper_positions, get_arm_joint_positions
 from teleop_utils import STUDENT_GRIPPER_JOINT_OPEN
@@ -68,19 +70,18 @@ def setup_student_arms(student_left, student_right):
 
     # move student arms to teacher arm position
     start_arm_qpos = get_joint_commands()
-    print(start_arm_qpos)
 
     # raise arms off of table to allow other joints to move
     start_left_teacher_pos = get_arm_joint_positions(student_left)
     start_right_teacher_pos = get_arm_joint_positions(student_right)
-    print("current left arm pos: ", start_left_teacher_pos)
-    print("current right arm pos: ", start_right_teacher_pos)
-    start_left_teacher_pos[1] = 0.0 # set joint 2 to zero position
+    start_left_teacher_pos[1] = 0.0
     start_right_teacher_pos[1] = 0.0
+    move_arms([student_left, student_right], [start_left_teacher_pos,start_right_teacher_pos] , move_time=2)
 
-    move_arms([student_left, student_right], [start_left_teacher_pos,start_right_teacher_pos] , move_time=2.5)
+    # move arms to starting position
     move_arms([student_left, student_right], [start_arm_qpos[:6],start_arm_qpos[7:-1]] , move_time=5)
     print("done moving to zero")
+
     # move grippers to starting position
     move_grippers([student_left, student_right], [STUDENT_GRIPPER_JOINT_OPEN, STUDENT_GRIPPER_JOINT_OPEN], move_time=1.5)
     print("done moving gripper to home")
@@ -99,8 +100,7 @@ def print_dt_diagnosis(actual_dt_history):
     print(f'Avg freq: {freq_mean:.2f} Get action: {np.mean(get_action_time):.3f} Step env: {np.mean(step_env_time):.3f}')
     return freq_mean
 
-def capture_one_episode(env, max_timesteps, camera_names, dataset_dir, dataset_name, overwrite, using_sim, ser):
-
+def capture_one_episode(env, max_timesteps, camera_names, dataset_dir, dataset_name, overwrite, using_sim):
     # saving dataset
     if not os.path.isdir(dataset_dir):
         os.makedirs(dataset_dir)
@@ -108,6 +108,10 @@ def capture_one_episode(env, max_timesteps, camera_names, dataset_dir, dataset_n
     if os.path.isfile(dataset_path) and not overwrite:
         print(f'Dataset already exist at \n{dataset_path}\nHint: set overwrite to True.')
         exit()
+
+    # Clear the queue before setting up the student arms
+    while not data_queue.empty():
+        data_queue.get()
 
     # setup student arms and move them to where teacher arms are
     setup_student_arms(env.student_left, env.student_right)
@@ -121,7 +125,6 @@ def capture_one_episode(env, max_timesteps, camera_names, dataset_dir, dataset_n
     timesteps = [ts]
     actions = []
     actual_dt_history = []
-    # for t in tqdm(range(max_timesteps)):
 
     left_joint_positions = np.array(get_arm_joint_positions(env.student_left))
     left_gripper_position = get_arm_gripper_positions(env.student_left)
@@ -132,38 +135,31 @@ def capture_one_episode(env, max_timesteps, camera_names, dataset_dir, dataset_n
     prev_command = np.concatenate((left_joint_positions, [left_gripper_position],
                                    right_joint_positions, [right_gripper_position]))
     threshold = 0.2
+
+    # Clear queue before collecting data
+    while not data_queue.empty():
+        data_queue.get()
+
+    env.start()
     for t in range(max_timesteps):
         if t %100 == 0:
             print(data_queue.qsize())
         t0 = time.time() #
         action = get_joint_commands()
-        # if t%30 == 0:
-        #     env.image_recorder.print_profiling_stats()
-
-        # Validate action
-        for index, (new_pos, prev_pos) in enumerate(zip(action, prev_command)):
-            arm = "left"
-            if abs(prev_pos - new_pos) > threshold and index != 6 and index != 13: # ignore grippers
-                if index > 6:
-                    arm = "right"
-                    index = index % 7  # Adjusted for right arm indexing
-                print(f"Cancelling Teleop: command {new_pos} to joint {index + 1} on {arm} arm is too far from the current pos {prev_pos}.")
-                return False
-        prev_command = action
 
         t1 = time.time() #
         ts = env.step(action)
         t2 = time.time() #
+        if t == max_timesteps - 1:
+            reboot_gripper(env.student_left)
+            reboot_gripper(env.student_right)
+
         timesteps.append(ts)
         actions.append(action)
         actual_dt_history.append([t0, t1, t2])
-
-    # Open student grippers
-    # move_grippers([env.student_left, env.student_right], [STUDENT_GRIPPER_JOINT_OPEN]*2 , move_time=1.5) ### COMMENTING OUT FOR PWM
+    
     print("DONE")
 
-    # env.shutdown()
-        
     freq_mean = print_dt_diagnosis(actual_dt_history)
     if freq_mean < 42 and not using_sim:
         print("Sampling frequency is too low. Should be >= 42")
@@ -201,26 +197,14 @@ def capture_one_episode(env, max_timesteps, camera_names, dataset_dir, dataset_n
         data_dict['/action'].append(action)
         for cam_name in camera_names:
             data_dict[f'/observations/images/{cam_name}'].append(cv2.cvtColor(bridge.imgmsg_to_cv2(ts.observation['images'][cam_name], desired_encoding='passthrough'),cv2.COLOR_YUV2RGB_YUYV))
-   
-    # yuv_image_data = data_dict[f'/observations/images/cam_high'][0]
-    # Convert YUV422 to BGR using OpenCV
-    # using to verify camera is capturing images
-    # yuv_image = np.array(yuv_image_data)
-    # bgr_image = cv2.cvtColor(yuv_image, cv2.COLOR_YUV2BGR_YUYV) 
-    # cv2.imshow('Image', bgr_image)
-    # cv2.waitKey(0) # Keep the window open until any key is pressed
-    # cv2.destroyAllWindows()
 
-    # HDF5
-    print("Making hdf5 file.")
     t0 = time.time()
     with h5py.File(dataset_path + '.hdf5', 'w', rdcc_nbytes=1024**2*2) as root:
         root.attrs['sim'] = False
         obs = root.create_group('observations')
         image = obs.create_group('images')
         for cam_name in camera_names:
-            _ = image.create_dataset(cam_name, (max_timesteps, 480, 640, 3), dtype='uint8', #have 2 channels because of YUV422 encoding
-                                     chunks=(1, 480, 640, 3), )
+            _ = image.create_dataset(cam_name, (max_timesteps, 480, 640, 3), dtype='uint8', chunks=(1, 480, 640, 3), )
         _ = obs.create_dataset('qpos', (max_timesteps, 14))
         if using_sim :
             _ = obs.create_dataset('qvel', (max_timesteps, 0))
@@ -255,17 +239,14 @@ def get_auto_index(dataset_dir, dataset_name_prefix = '', data_suffix = 'hdf5'):
 
 
 if __name__=='__main__':
-
     os.nice(1)
     env = make_real_env()
 
     overwrite = True
-    # max_time = 100 # seconds
-    # max_timesteps=60*max_time 
     using_sim = False
     stop_threads = False
 
-    task_config = TASK_CONFIGS["default_task"]
+    task_config = TASK_CONFIGS["stack_chips"]
     dataset_dir = task_config['dataset_dir']
     max_timesteps = task_config['episode_len']
     camera_names = task_config['camera_names']
@@ -276,11 +257,9 @@ if __name__=='__main__':
     dataset_name = f'episode_{episode_idx}'
     print(dataset_name + '\n')
 
-    # Serial port configuration
     ser_port = '/dev/tty_TEACHER_ARMS' 
     baud_rate = 250000
 
-    # Open the serial port
     try:
         ser = serial.Serial(ser_port, baud_rate, timeout=1)
         print("Serial port initialized: ", ser)
@@ -288,23 +267,27 @@ if __name__=='__main__':
         print("Error opening serial port: ", e)
     time.sleep(2)
 
-    # Create one thread
     read_thread = threading.Thread(target=read_from_serial, args=(ser,data_queue))
-
-    # Start the thread
     read_thread.start()
     
-    while True:
-        try:
-            is_healthy = capture_one_episode(env, max_timesteps, camera_names, dataset_dir, dataset_name, overwrite, using_sim, ser)
-            print("Finished session")
-            if is_healthy:
+    try:
+        while True:
+            dataset_name = f'episode_{episode_idx}'
+            print(dataset_name + '\n')
+            
+            try:
+                is_healthy = capture_one_episode(env, max_timesteps, camera_names, dataset_dir, dataset_name, overwrite, using_sim)
+                print("Finished session")
+                
+                if not is_healthy:
+                    break
+                
+                episode_idx += 1
+            except KeyboardInterrupt:
                 break
-        except KeyboardInterrupt:
-            print("Rebooting Grippers... ")
-            reboot_gripper(env.student_left)
-            reboot_gripper(env.student_right)
-    stop_threads = True
-    read_thread.join() # wait for thread to finish what it was doing
-    rclpy.shutdown()
-    ser.close()
+    finally:
+        print("Rebooting Grippers... ")
+        stop_threads = True
+        read_thread.join()  # wait for thread to finish what it was doing
+        rclpy.shutdown()
+        ser.close()

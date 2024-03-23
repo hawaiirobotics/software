@@ -31,7 +31,7 @@ motors:
     Baud_Rate: 3
     Return_Delay_Time: 0
     Drive_Mode: 0
-    Velocity_Limit: 256
+    Velocity_Limit: 25
     Min_Position_Limit: 1024
     Max_Position_Limit: 3072
     Secondary_ID: 255
@@ -41,7 +41,7 @@ motors:
     Baud_Rate: 3
     Return_Delay_Time: 0
     Drive_Mode: 1
-    Velocity_Limit: 256
+    Velocity_Limit: 25
     Min_Position_Limit: 1024
     Max_Position_Limit: 2818
     Secondary_ID: 255
@@ -51,7 +51,7 @@ motors:
     Baud_Rate: 3
     Return_Delay_Time: 0
     Drive_Mode: 0
-    Velocity_Limit: 256
+    Velocity_Limit: 25
     Min_Position_Limit: 1024
     Max_Position_Limit: 2818
     Secondary_ID: 2
@@ -61,7 +61,7 @@ motors:
     Baud_Rate: 3
     Return_Delay_Time: 0
     Drive_Mode: 1
-    Velocity_Limit: 256
+    Velocity_Limit: 25
     Min_Position_Limit: 2105
     Max_Position_Limit: 4038
     Secondary_ID: 255
@@ -71,7 +71,7 @@ motors:
     Baud_Rate: 3
     Return_Delay_Time: 0
     Drive_Mode: 1
-    Velocity_Limit: 256
+    Velocity_Limit: 25
     Min_Position_Limit: 0
     Max_Position_Limit: 4095
     Secondary_ID: 255
@@ -81,7 +81,7 @@ motors:
     Baud_Rate: 3
     Return_Delay_Time: 0
     Drive_Mode: 0
-    Velocity_Limit: 256
+    Velocity_Limit: 25
     Min_Position_Limit: 2048
     Max_Position_Limit: 4095
     Secondary_ID: 255
@@ -91,7 +91,7 @@ motors:
     Baud_Rate: 3
     Return_Delay_Time: 0
     Drive_Mode: 0
-    Velocity_Limit: 256
+    Velocity_Limit: 25
     Min_Position_Limit: 0
     Max_Position_Limit: 4095
     Secondary_ID: 255
@@ -101,7 +101,7 @@ motors:
     Baud_Rate: 3
     Return_Delay_Time: 0
     Drive_Mode: 0 
-    Velocity_Limit: 256
+    Velocity_Limit: 25
     PWM_Limit: 885
     Min_Position_Limit: 450
     Max_Position_Limit: 3835

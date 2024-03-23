@@ -550,8 +550,6 @@ bool InterbotixDriverXS::write_joint_command(
   static float safe_gripper_position = 0.0f;
   static float prev_gripper_command = 4.0f;
   static float prev_gripper_position = 0.0f;
-  static int velocity_buffer_size = 10;
-  static std::vector<float> velocity_hist(velocity_buffer_size, 0); // Save history of last 10 deltas
   static int message_rejected = 0;
   
   const std::string mode = motor_map[name].mode;
@@ -573,10 +571,11 @@ bool InterbotixDriverXS::write_joint_command(
       float present_load = get_gripper_present_load();
       float delta = current_pos - prev_gripper_position;
 
-      spdlog::info("Present Load: {}", present_load);
-      spdlog::info("Current Position: {}", current_pos);
-      spdlog::info("Command: {}", command);
-      spdlog::info("Velocity: {}", delta);
+      // Logging
+      // spdlog::info("Present Load: {}", present_load);
+      // spdlog::info("Current Position: {}", current_pos);
+      // spdlog::info("Command: {}", command);
+      // spdlog::info("Velocity: {}", delta);
 
       if (present_load > load_limit) {
         safe_gripper_position = current_pos;
@@ -606,28 +605,31 @@ bool InterbotixDriverXS::write_joint_command(
         float current_vel = read_gripper_velocity();
         float present_load = get_gripper_present_load();
         float delta = current_pos - prev_gripper_position;
-        velocity_hist.push_back(delta);
-        velocity_hist.erase(velocity_hist.begin());
-        float velocity = std::accumulate(velocity_hist.begin(), velocity_hist.end(), 0.0f) / velocity_buffer_size;
 
         float pos_error = command - current_pos;
         float PWM_command = Kp * pos_error;
         if (present_load < load_limit && abs(current_vel) < vel_limit) { // if gripper hits object and slows down, limit PWM
           PWM_command = PWM_command < load_limit ? load_limit : PWM_command;
           message_rejected = 1;
-          XSLOG_DEBUG("SATURATING Commanded PWM: '%f', Present Load: '%f', Velocity: '%f'", PWM_command, present_load, velocity);
+          XSLOG_DEBUG("SATURATING Commanded Position: '%f', PWM: '%f', Present Load: '%f'", command, PWM_command, present_load);
+        }
+        if (current_pos > 2.75) {
+            PWM_command = -abs(PWM_command);
+            message_rejected = 1;
+            XSLOG_DEBUG("GRIPPER OVER LIMIT");
         }
         else {
           message_rejected = 0;
-          XSLOG_DEBUG("FREE       Commanded PWM: '%f', Present Load: '%f', Velocity: '%f'", PWM_command, present_load, velocity);
+          XSLOG_DEBUG("FREE       Commanded Position: '%f', PWM: '%f', Present Load: '%f'", command, PWM_command, present_load);
         }
         
+        // Logging
         spdlog::info("Present Load: {}", present_load);
         spdlog::info("Current Position: {}", current_pos);
         spdlog::info("Command: {}", PWM_command);
-        spdlog::info("Velocity: {}", velocity);
         spdlog::info("Sensed Velocity: {}", current_vel);
         spdlog::info("Message Rejected: {}", message_rejected);
+
         // write pwm command
         dxl_wb.itemWrite(motor_map[name].motor_id, "Goal_PWM", int32_t(PWM_command));
         prev_gripper_position = current_pos;

@@ -9,12 +9,16 @@ from tqdm import tqdm
 from einops import rearrange
 
 from constants import DT
-from constants import PUPPET_GRIPPER_JOINT_OPEN
+from constants import STUDENT_GRIPPER_JOINT_OPEN
 from training_utils import load_data # data functions
 from training_utils import sample_box_pose, sample_insertion_pose # robot functions
 from training_utils import compute_dict_mean, set_seed, detach_dict # helper functions
 from policy import ACTPolicy, CNNMLPPolicy
 from visualize_episodes import save_videos
+from cv_bridge import CvBridge
+import cv2
+import rclpy
+import gc
 
 from sim_env import BOX_POSE
 
@@ -96,7 +100,7 @@ def main(args):
     }
 
     if is_eval:
-        ckpt_names = [f'policy_best.ckpt']
+        ckpt_names = [f'tape_pass_policy.ckpt']
         results = []
         for ckpt_name in ckpt_names:
             success_rate, avg_return = eval_bc(config, ckpt_name, save_episode=True)
@@ -105,6 +109,7 @@ def main(args):
         for ckpt_name, success_rate, avg_return in results:
             print(f'{ckpt_name}: {success_rate=} {avg_return=}')
         print()
+        rclpy.shutdown()
         exit()
 
     train_dataloader, val_dataloader, stats, _ = load_data(dataset_dir, num_episodes, camera_names, batch_size_train, batch_size_val)
@@ -147,8 +152,9 @@ def make_optimizer(policy_class, policy):
 
 def get_image(ts, camera_names):
     curr_images = []
+    bridge = CvBridge()
     for cam_name in camera_names:
-        curr_image = rearrange(ts.observation['images'][cam_name], 'h w c -> c h w')
+        curr_image = rearrange(cv2.cvtColor(bridge.imgmsg_to_cv2(ts.observation['images'][cam_name], desired_encoding='passthrough'),cv2.COLOR_YUV2RGB_YUYV), 'h w c -> c h w')
         curr_images.append(curr_image)
     curr_image = np.stack(curr_images, axis=0)
     curr_image = torch.from_numpy(curr_image / 255.0).float().cuda().unsqueeze(0)
@@ -205,9 +211,9 @@ def eval_bc(config, ckpt_name, save_episode=True):
         query_frequency = 1
         num_queries = policy_config['num_queries']
 
-    max_timesteps = int(max_timesteps * 1) # may increase for real-world tasks
+    max_timesteps = int(max_timesteps * 0.5) # may increase for real-world tasks
 
-    num_rollouts = 50
+    num_rollouts = 1
     episode_returns = []
     highest_rewards = []
     print("before rollout loop")
@@ -220,6 +226,7 @@ def eval_bc(config, ckpt_name, save_episode=True):
             BOX_POSE[0] = np.concatenate(sample_insertion_pose()) # used in sim reset
 
         ts = env.reset()
+        env.start()
 
         ### onscreen render
         if onscreen_render:
@@ -233,11 +240,10 @@ def eval_bc(config, ckpt_name, save_episode=True):
 
         qpos_history = torch.zeros((1, max_timesteps, state_dim)).cuda()
         image_list = [] # for visualization
-        qpos_list = []
-        target_qpos_list = []
-        rewards = []
+        qpos_list = np.zeros((max_timesteps, 14), dtype=np.float32)
+        target_qpos_list = np.zeros((max_timesteps, 14), dtype=np.float32)
+        rewards = np.zeros(max_timesteps, dtype=np.uint8)
 
-        
         left_joint_positions = np.array(get_arm_joint_positions(env.student_left))
         left_gripper_position = get_arm_gripper_positions(env.student_left)
 
@@ -246,31 +252,33 @@ def eval_bc(config, ckpt_name, save_episode=True):
 
         prev_command = np.concatenate((left_joint_positions, [left_gripper_position],
                                     right_joint_positions, [right_gripper_position]))
-        threshold = 0.2
+        threshold = 0.4
+        bridge = CvBridge()
         with torch.inference_mode():
             for t in range(max_timesteps):
                 ### update onscreen render and wait for DT
-                if onscreen_render:
-                    image = env._physics.render(height=480, width=640, camera_id=onscreen_cam)
-                    plt_img.set_data(image)
-                    plt.pause(DT)
+                # if onscreen_render:
+                #     image = env._physics.render(height=480, width=640, camera_id=onscreen_cam)
+                #     plt_img.set_data(image)
+                #     plt.pause(DT)
 
                 ### process previous timestep to get qpos and image_list
                 obs = ts.observation
                 if 'images' in obs:
-                    image_list.append(obs['images'])
-                else:
-                    image_list.append({'main': obs['image']})
+                    image_list.append({cam_name : cv2.cvtColor(bridge.imgmsg_to_cv2(obs['images'][cam_name], desired_encoding='passthrough'), cv2.COLOR_YUV2RGB_YUYV) for cam_name in camera_names})
+                
                 qpos_numpy = np.array(obs['qpos'])
                 qpos = pre_process(qpos_numpy)
                 qpos = torch.from_numpy(qpos).float().cuda().unsqueeze(0)
                 qpos_history[:, t] = qpos
                 curr_image = get_image(ts, camera_names)
 
-                ### query policy
+                ## query policy
                 if config['policy_class'] == "ACT":
                     if t % query_frequency == 0:
                         all_actions = policy(qpos, curr_image)
+                        # torch.cuda.empty_cache()
+                        # gc.collect()
                     if temporal_agg:
                         all_time_actions[[t], t:t+num_queries] = all_actions
                         actions_for_curr_step = all_time_actions[:, t]
@@ -293,28 +301,38 @@ def eval_bc(config, ckpt_name, save_episode=True):
                 action = post_process(raw_action)
                 target_qpos = action
 
-                 # Validate action
+                # Validate action
                 for index, (new_pos, prev_pos) in enumerate(zip(action, prev_command)):
                     arm = "left"
-                    if abs(prev_pos - new_pos) > threshold:
-                        if index > 7:
+                    if abs(prev_pos - new_pos) > threshold and index != 6 and index != 13: # ignore grippers
+                        if index > 6:
                             arm = "right"
-                            index = index % 8  # Adjusted for right arm indexing
+                            index = index % 7  # Adjusted for right arm indexing
                         print(f"Cancelling Teleop: command {new_pos} to joint {index + 1} on {arm} arm is too far from the current pos {prev_pos}.")
                         return False
                 prev_command = action
 
-                ### step the environment
-                # ts = env.step(target_qpos)
+                ## step the environment
+                
+                target_qpos = [float(item) for item in target_qpos]
+                print(target_qpos)
+                ts = env.step(target_qpos)
 
-                ### for visualization
-                qpos_list.append(qpos_numpy)
-                target_qpos_list.append(target_qpos)
-                rewards.append(env.get_reward())
+                # for visualization
+                
+                qpos_list[t] = qpos_numpy
+                target_qpos_list[t] = target_qpos
+                rewards[t] = env.get_reward()
 
             plt.close()
+
+        total_image_size = 0
+        for image_dict in image_list:
+            for image in image_dict.values():
+                total_image_size += image.nbytes
+        print(total_image_size)
         if real_robot:
-            move_grippers([env.puppet_bot_left, env.puppet_bot_right], [PUPPET_GRIPPER_JOINT_OPEN] * 2, move_time=0.5)  # open
+            move_grippers([env.student_left, env.student_right], [STUDENT_GRIPPER_JOINT_OPEN] * 2, move_time=0.5)  # open
             pass
 
         rewards = np.array(rewards)
@@ -325,6 +343,7 @@ def eval_bc(config, ckpt_name, save_episode=True):
         print(f'Rollout {rollout_id}\n{episode_return=}, {episode_highest_reward=}, {env_max_reward=}, Success: {episode_highest_reward==env_max_reward}')
 
         if save_episode:
+            print("Saving videos.")
             save_videos(image_list, DT, video_path=os.path.join(ckpt_dir, f'video{rollout_id}.mp4'))
 
     success_rate = np.mean(np.array(highest_rewards) == env_max_reward)
@@ -344,6 +363,7 @@ def eval_bc(config, ckpt_name, save_episode=True):
         f.write(repr(episode_returns))
         f.write('\n\n')
         f.write(repr(highest_rewards))
+    print("DONE")
 
     return success_rate, avg_return
 

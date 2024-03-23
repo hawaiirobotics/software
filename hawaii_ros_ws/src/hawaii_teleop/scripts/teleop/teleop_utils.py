@@ -8,7 +8,7 @@ from interbotix_xs_msgs.msg import JointSingleCommand
 DT = 0.02
 STUDENT_GRIPPER_JOINT_OPEN = 2.74
 # STUDENT_GRIPPER_JOINT_CLOSE = -2.4
-START_ARM_POSE = [0,0,0,0,0,0,0]
+START_ARM_POSE = [0.0, -0.24, 0.56, 0.0, 0.44, 0.0, 2.74]
 
 class ImageRecorder(Node):
     def __init__(self, init_node=True, is_debug=False):

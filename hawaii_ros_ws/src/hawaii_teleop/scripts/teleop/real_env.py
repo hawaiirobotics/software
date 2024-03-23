@@ -4,7 +4,11 @@ import collections
 import matplotlib.pyplot as plt
 import dm_env
 import rclpy
+import sys
+import os
 from rclpy.executors import MultiThreadedExecutor
+
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__))))
 
 from teleop_utils import Recorder, ImageRecorder
 from threading import Thread
@@ -42,8 +46,6 @@ class RealEnv:
         self.recorder_right = Recorder('right', init_node=False)
         self.image_recorder = ImageRecorder(init_node=False)
         self.gripper_command = JointSingleCommand(name="gripper")
-
-        self.start()
 
     def start(self) -> None:
         """Start a background thread that builds and spins an executor."""
@@ -95,14 +97,6 @@ class RealEnv:
 
     def get_images(self):
         return self.image_recorder.get_images()
-        # print("trying to get images")
-        # self.request_event.set()
-        # try:
-        #     images = self.image_queue.get(timeout=10)  # Adjust timeout as needed
-        #     # Process the images
-        # except multiprocessing.queue.Empty:
-        #     print("No images received")
-        # return images
 
     def set_gripper_pose(self, left_gripper_desired_pos_normalized, right_gripper_desired_pos_normalized):
         left_gripper_desired_joint = left_gripper_desired_pos_normalized
@@ -117,12 +111,6 @@ class RealEnv:
         reset_position = START_ARM_POSE[:6]
         move_arms([self.student_left, self.student_right], [reset_position, reset_position], move_time=10)
 
-
-    def _reset_gripper(self):
-        """Set to position mode and do position resets: first open then close. Then change back to PWM mode"""
-        # move_grippers([self.student_left, self.student_right], STUDENT_GRIPPER_JOINT_OPEN, move_time=0.5)
-        # move_grippers([self.student_left, self.student_right], STUDENT_GRIPPER_JOINT_CLOSE, move_time=1)
-
     def get_observation(self):
         obs = collections.OrderedDict()
         obs['qpos'] = self.get_qpos()
@@ -132,7 +120,7 @@ class RealEnv:
         return obs
 
     def get_reward(self):
-        return 0
+        return np.uint8(0)
 
     def reset(self, fake=False):
         if not fake:
@@ -140,7 +128,6 @@ class RealEnv:
             self.student_left.core.robot_reboot_motors("single", "gripper", True)
             self.student_right.core.robot_reboot_motors("single", "gripper", True)
             self._reset_joints()
-            # self._reset_gripper()
         return dm_env.TimeStep(
             step_type=dm_env.StepType.FIRST,
             reward=self.get_reward(),

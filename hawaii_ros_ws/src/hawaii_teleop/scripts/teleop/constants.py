@@ -6,4 +6,16 @@ TASK_CONFIGS = {
         'episode_len': 1000,
         'camera_names': ['cam_high', 'cam_front', 'cam_left', 'cam_right']
     },
+    'pass_block_task':{
+        'dataset_dir': DATA_DIR + '/pass_block_task',
+        'num_episodes': 50,
+        'episode_len': 1000,
+        'camera_names': ['cam_high', 'cam_front', 'cam_left', 'cam_right']
+    },
+    'stack_chips':{
+        'dataset_dir': DATA_DIR + '/stack_chips',
+        'num_episodes': 50,
+        'episode_len': 1000,
+        'camera_names': ['cam_high', 'cam_front', 'cam_left', 'cam_right']
+    },
 }
