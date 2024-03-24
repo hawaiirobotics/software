@@ -73,22 +73,22 @@ struct EncoderSettings {
 
 // 0, 13.89, 27.77, 0, -13.89, 0,
 EncoderSettings encoders[14] = {
-// arm 1
-{ -90.0, 90.0, -234.84, 1, 0x40,    361, 0, 0},
-{ -90.0, 67.2, -155.21, -1, 0x41,  361, 0, 13.89},
-{ 6.0, 175.0, -298.65, -1, 0x43,   361, 0, -27.77},
-{ -180.0, 180.0, -209.27, -1, 0x42, 361, 0, 0},
-{ 0.0, 180.0, -2.29, 1, 0x45,   361, 0, 13.89},
-{ -180.0, 180.0, -120.59, 1, 0x44, 361, 0, 0},
-{ -140.4, 157.0, -204.35, 53.87, 0x46, 361, 0, 0}, // scale is the range of the teacher arm gripper
-// arm 2
+// left arm
+{ -90.0, 90.0, -233.88, 1, 0x40,    361, 0, 0},
+{ -90.0, 67.2, -155.40, -1, 0x41,  361, 0, 13.89},
+{ 6.0, 175.0, -297.95, -1, 0x43,   361, 0, -27.77},
+{ -180.0, 180.0, -211.55, -1, 0x42, 361, 0, 0},
+{ 0.0, 180.0, -6.94, 1, 0x45,   361, 0, 13.89},
+{ -180.0, 180.0, -212.17, 1, 0x44, 361, 0, 0},
+{ -140.4, 157.0, -203.47, 55.13, 0x46, 361, 0, 0}, // scale is the range of the teacher arm gripper
+// right arm
 { -90.0, 90.0, -328.54, 1, 0x40,    361, 0, 0},
 { -90.0, 67.2, -261.56, -1, 0x41,  361, 0, 13.89},
 { 6.0, 175.0, -280.28, -1, 0x43,   361, 0, -27.77},
 { -180.0, 180.0, -207.07, -1, 0x42, 361, 0, 0},
 { 0.0, 180.0, -76.02, 1, 0x45,   361, 0, 13.89},
 { -180.0, 180.0, -251.28, 1, 0x44, 361, 0, 0},
-{ -140.4, 157.0, -86.57, 52, 0x46, 361, 0, 0}, // scale is the range of the teacher arm gripper
+{ -140.4, 157.0, -87.6, 51.2, 0x46, 361, 0, 0}, // scale is the range of the teacher arm gripper
 };
 
 
@@ -236,9 +236,6 @@ float mapAngle(EncoderSettings& encoder, float newAngle) {
     } else if (delta < -180) {
       // Wrapped around counterclockwise
       encoder.continuousAngle += (360 + delta);
-    } else {
-      // No wraparound
-      encoder.continuousAngle += delta;
     }
   } else {
     encoder.continuousAngle = newAngle;
@@ -293,11 +290,29 @@ void update_offset() {
       rawAngle = (readRegister(Wire1, encoders[i].address, 0x0C, 2) / 4096.0 * 360.0);
       encoders[i].offset = encoders[i].home_position - rawAngle;
     }
+    // print_offsets();
 }
 
 void EncoderErrorReadings() {
   setAllLEDsToRed();  
-  exit(-1);
+  // exit(-1);
+}
+
+bool checkConnection() {
+    const int deviceAddr = 0x76;
+    const int regAddr = 0x05;
+    const int expectedValue = 0x08;
+    const int length = 1; // Length of data to read
+
+    // Check on Wire1
+    int valueOnWire1 = readRegister(Wire1, deviceAddr, regAddr, length);
+    bool isConnectedWire1 = (valueOnWire1 == expectedValue);
+
+    // Check on Wire2
+    int valueOnWire2 = readRegister(Wire2, deviceAddr, regAddr, length);
+    bool isConnectedWire2 = (valueOnWire2 == expectedValue);
+
+    return isConnectedWire1 && isConnectedWire2;
 }
 
 void setup()
@@ -423,6 +438,13 @@ void setup()
 
   //setup serial
   Serial.begin(250000);
+  while (!Serial) {
+    ; // Wait indefinitely until the serial port opens
+  }
+
+  // while (!checkConnection()){
+  //   delay(10000);
+  // }
 }
 
 void loop()
@@ -507,7 +529,8 @@ void loop()
     uint16_t RAW_TA_V = readRegister(Wire, 0x40, 0x02, 2) >> 3;
     float TA_V = RAW_TA_V * V_LSB;
 
-    // Lighting Current
+    // Lighting Current  const int dev
+
     // LSB 183.11e-6
     uint16_t RAW_L_C = readRegister(Wire, 0x44, 0x04, 2);
     float L_C = RAW_L_C * L_C_LSB;
