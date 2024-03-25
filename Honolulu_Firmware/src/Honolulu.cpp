@@ -74,20 +74,20 @@ struct EncoderSettings {
 // 0, 13.89, 27.77, 0, -13.89, 0,
 EncoderSettings encoders[14] = {
 // left arm
-{ -90.0, 90.0, -233.88, 1, 0x40,    361, 0, 0},
-{ -90.0, 67.2, -155.40, -1, 0x41,  361, 0, 13.89},
-{ 6.0, 175.0, -297.95, -1, 0x43,   361, 0, -27.77},
-{ -180.0, 180.0, -211.55, -1, 0x42, 361, 0, 0},
-{ 0.0, 180.0, -6.94, 1, 0x45,   361, 0, 13.89},
-{ -180.0, 180.0, -212.17, 1, 0x44, 361, 0, 0},
+{ -90.0, 90.0, -238.27, 1, 0x40,    361, 0, 0},
+{ -90.0, 67.2, -112.23, -1, 0x41,  361, 0, 13.89},
+{ 6.0, 175.0, -299.18, -1, 0x43,   361, 0, -27.77},
+{ -180.0, 180.0, -209.479, -1, 0x42, 361, 0, 0},
+{ 0.0, 180.0, -0.53, 1, 0x45,   361, 0, 13.89},
+{ -180.0, 180.0, -212.52, 1, 0x44, 361, 0, 0},
 { -140.4, 157.0, -203.47, 55.13, 0x46, 361, 0, 0}, // scale is the range of the teacher arm gripper
 // right arm
-{ -90.0, 90.0, -328.54, 1, 0x40,    361, 0, 0},
-{ -90.0, 67.2, -261.56, -1, 0x41,  361, 0, 13.89},
-{ 6.0, 175.0, -280.28, -1, 0x43,   361, 0, -27.77},
-{ -180.0, 180.0, -207.07, -1, 0x42, 361, 0, 0},
-{ 0.0, 180.0, -76.02, 1, 0x45,   361, 0, 13.89},
-{ -180.0, 180.0, -251.28, 1, 0x44, 361, 0, 0},
+{ -90.0, 90.0, -28.04, 1, 0x40,    361, 0, 0},
+{ -90.0, 67.2, -320.09, -1, 0x41,  361, 0, 13.89},
+{ 6.0, 175.0, -282.74, -1, 0x43,   361, 0, -27.77},
+{ -180.0, 180.0, -204.52, -1, 0x42, 361, 0, 0},
+{ 0.0, 180.0, -76.28, 1, 0x45,   361, 0, 13.89},
+{ -180.0, 180.0, -340.90, 1, 0x44, 361, 0, 0},
 { -140.4, 157.0, -87.6, 51.2, 0x46, 361, 0, 0}, // scale is the range of the teacher arm gripper
 };
 
@@ -226,7 +226,7 @@ int readRegister(TwoWire w, int chip_addr, int reg_addr, int length) {
 }
 
 float mapAngle(EncoderSettings& encoder, float newAngle) {
-  if (encoder.lastAngle < 361) {
+  if (encoder.lastAngle < 361.0) {
     float delta = newAngle - encoder.lastAngle;
 
     // Check for wraparound
@@ -236,6 +236,10 @@ float mapAngle(EncoderSettings& encoder, float newAngle) {
     } else if (delta < -180) {
       // Wrapped around counterclockwise
       encoder.continuousAngle += (360 + delta);
+    }
+    else {
+      // No wraparound
+      encoder.continuousAngle += delta;
     }
   } else {
     encoder.continuousAngle = newAngle;
@@ -438,9 +442,9 @@ void setup()
 
   //setup serial
   Serial.begin(250000);
-  while (!Serial) {
-    ; // Wait indefinitely until the serial port opens
-  }
+  // while (!Serial) {
+  //   ; // Wait indefinitely until the serial port opens
+  // }
 
   // while (!checkConnection()){
   //   delay(10000);
@@ -449,6 +453,9 @@ void setup()
 
 void loop()
 {
+    static float l_arm_ang[7] = {0,0,0,0,0,0,0};
+    static float r_arm_ang[7] = {0,0,0,0,0,0,0};
+    static uint8_t iic_error[14] = {0};
 
     uint32_t startTime = micros(); // Record the start time
 
@@ -569,18 +576,39 @@ void loop()
 
     for(int i = 0; i < 7; i++) {
       rawAngle = (readRegister(Wire2, encoders[i].address, 0x0C, 2) / 4096.0 * 360.0);
-      arm1_joint_angles[i] = mapAngle(encoders[i], rawAngle)*PI/180.0;
+
       if(rawAngle < 0){
-        EncoderErrorReadings();
+        iic_error[i]++;
+        rawAngle = l_arm_ang[i];
+
+        if(iic_error[i] > 5) {
+          EncoderErrorReadings();
+        }
+      } else {
+        iic_error[i] = 0;
+        l_arm_ang[i] = rawAngle;
       }
+
+      arm1_joint_angles[i] = mapAngle(encoders[i], rawAngle)*PI/180.0;
     }
 
     for(int i = 7; i < 14; i++) {
       rawAngle = (readRegister(Wire1, encoders[i].address, 0x0C, 2) / 4096.0 * 360.0);
-      arm2_joint_angles[i-7] = mapAngle(encoders[i], rawAngle)*PI/180.0;
+
+
       if(rawAngle < 0){
-        EncoderErrorReadings();
+        iic_error[i]++;
+        rawAngle = r_arm_ang[i-7];
+
+        if(iic_error[i] > 5) {
+          EncoderErrorReadings();
+        }
+      } else {
+        iic_error[i] = 0;
+        r_arm_ang[i-7] = rawAngle;
       }
+
+      arm2_joint_angles[i-7] = mapAngle(encoders[i], rawAngle)*PI/180.0;
     }
 
     // Send ARM1 angles back over serial
