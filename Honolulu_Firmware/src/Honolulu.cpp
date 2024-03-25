@@ -583,6 +583,16 @@ void loop()
 
         if(iic_error[i] > 5) {
           EncoderErrorReadings();
+
+          tft.setTextWrap(true);
+          tft.setCursor(0, 0);
+          tft.setTextColor(ST77XX_WHITE);
+          tft.setTextSize(2);
+
+          memset(buffer, 0, 200);
+          sprintf(buffer, "arm1 enc %d", i);
+
+          tft.print(buffer);
         }
       } else {
         iic_error[i] = 0;
@@ -602,6 +612,16 @@ void loop()
 
         if(iic_error[i] > 5) {
           EncoderErrorReadings();
+
+          tft.setTextWrap(true);
+          tft.setCursor(0, 0);
+          tft.setTextColor(ST77XX_WHITE);
+          tft.setTextSize(2);
+
+          memset(buffer, 0, 200);
+          sprintf(buffer, "arm2 enc %d", i);
+
+          tft.print(buffer);
         }
       } else {
         iic_error[i] = 0;
@@ -634,23 +654,23 @@ void loop()
 
     Serial.println(buffer);
 
-    if(counter == 5){
-      counter = 0;
+    // if(counter == 5){
+    //   counter = 0;
 
-      tft.setTextWrap(true);
-      tft.setCursor(0, 0);
-      // tft.fillScreen(ST77XX_BLACK);
-      // tft.setTextColor(ST77XX_WHITE, ST77XX_BLACK);
-      tft.setTextColor(ST77XX_WHITE);
-      tft.setTextSize(2);
+    //   tft.setTextWrap(true);
+    //   tft.setCursor(0, 0);
+    //   // tft.fillScreen(ST77XX_BLACK);
+    //   // tft.setTextColor(ST77XX_WHITE, ST77XX_BLACK);
+    //   tft.setTextColor(ST77XX_WHITE);
+    //   tft.setTextSize(2);
 
-      memset(buffer, 0, 200);
-      sprintf(buffer, "TAC %4.2f, TAV %4.2f\nLC %4.2f, LV %4.2f\n3v3C %4.2f, 3v3V %4.2f\n5vC %4.2f, 5vV %4.2f", TA_C, TA_V, L_C, L_V, THREE_C, THREE_V, FIVE_C, FIVE_V);
+    //   memset(buffer, 0, 200);
+    //   sprintf(buffer, "TAC %4.2f, TAV %4.2f\nLC %4.2f, LV %4.2f\n3v3C %4.2f, 3v3V %4.2f\n5vC %4.2f, 5vV %4.2f", TA_C, TA_V, L_C, L_V, THREE_C, THREE_V, FIVE_C, FIVE_V);
 
-      tft.print(buffer);
-    } else {
-      counter++;
-    }
+    //   tft.print(buffer);
+    // } else {
+    //   counter++;
+    // }
 
     delayMicroseconds(UPDATE_RATE - (micros() - startTime));
     // float frequency = 1000000/(micros() - startTime);
