@@ -37,6 +37,10 @@ v4l2-ctl --device=/dev/CAM_HIGH --set-ctrl=focus_absolute=0
 v4l2-ctl --device=/dev/CAM_FRONT --set-ctrl=focus_absolute=0
 v4l2-ctl --device=/dev/CAM_LEFT --set-ctrl=focus_absolute=0
 v4l2-ctl --device=/dev/CAM_RIGHT --set-ctrl=focus_absolute=0
+v4l2-ctl --device=/dev/CAM_HIGH --set-ctrl=brightness=128
+v4l2-ctl --device=/dev/CAM_FRONT --set-ctrl=brightness=128
+v4l2-ctl --device=/dev/CAM_LEFT --set-ctrl=brightness=128
+v4l2-ctl --device=/dev/CAM_RIGHT --set-ctrl=brightness=128
 
 # Store the PIDs of the static_transform_publisher instances
 STATIC_TRANSFORM_PIDS=($!)

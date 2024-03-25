@@ -42,6 +42,7 @@ def main(args):
     batch_size_train = args['batch_size']
     batch_size_val = args['batch_size']
     num_epochs = args['num_epochs']
+    resume_epoch = args.get('resume_epoch', None)
 
     ckpt_dir = os.path.join("saved_models",task_name)
     print(ckpt_dir)
@@ -101,7 +102,7 @@ def main(args):
     }
 
     if is_eval:
-        ckpt_names = [f'policy_best.ckpt']
+        ckpt_names = [f'policy_epoch_1900_seed_0.ckpt']
         results = []
         for ckpt_name in ckpt_names:
             success_rate, avg_return = eval_bc(config, ckpt_name, save_episode=True)
@@ -122,13 +123,17 @@ def main(args):
     with open(stats_path, 'wb') as f:
         pickle.dump(stats, f)
 
-    best_ckpt_info = train_bc(train_dataloader, val_dataloader, config)
+    if resume_epoch is not None:
+        print(f"Resuming training from {resume_epoch} epochs")
+        best_ckpt_info = train_bc(train_dataloader, val_dataloader, config, resume_epoch)
+    else:
+        best_ckpt_info = train_bc(train_dataloader, val_dataloader, config)
     best_epoch, min_val_loss, best_state_dict = best_ckpt_info
 
     # save best checkpoint
     ckpt_path = os.path.join(ckpt_dir, f'policy_best.ckpt')
     torch.save(best_state_dict, ckpt_path)
-    print(f'Best ckpt, val loss {min_val_loss:.6f} @ epoch{best_epoch}')
+    print(f'Best ckpt, val loss {min_val_loss:.6f} @ epoch {best_epoch}')
 
 
 def make_policy(policy_class, policy_config):
@@ -212,7 +217,7 @@ def eval_bc(config, ckpt_name, save_episode=True):
         query_frequency = 1
         num_queries = policy_config['num_queries']
 
-    max_timesteps = int(max_timesteps * 1) # may increase for real-world tasks
+    max_timesteps = int(max_timesteps * 4) # may increase for real-world tasks
 
     num_rollouts = 1
     episode_returns = []
@@ -265,8 +270,8 @@ def eval_bc(config, ckpt_name, save_episode=True):
 
                 ### process previous timestep to get qpos and image_list
                 obs = ts.observation
-                if 'images' in obs:
-                    image_list.append({cam_name : cv2.cvtColor(bridge.imgmsg_to_cv2(obs['images'][cam_name], desired_encoding='passthrough'), cv2.COLOR_YUV2RGB_YUYV) for cam_name in camera_names})
+                # if 'images' in obs:
+                #     image_list.append({cam_name : cv2.cvtColor(bridge.imgmsg_to_cv2(obs['images'][cam_name], desired_encoding='passthrough'), cv2.COLOR_YUV2RGB_YUYV) for cam_name in camera_names})
                 
                 qpos_numpy = np.array(obs['qpos'])
                 qpos = pre_process(qpos_numpy)
@@ -328,10 +333,10 @@ def eval_bc(config, ckpt_name, save_episode=True):
             plt.close()
 
         total_image_size = 0
-        for image_dict in image_list:
-            for image in image_dict.values():
-                total_image_size += image.nbytes
-        print(total_image_size)
+        # for image_dict in image_list:
+        #     for image in image_dict.values():
+        #         total_image_size += image.nbytes
+        # print(total_image_size)
         if real_robot:
             move_grippers([env.student_left, env.student_right], [STUDENT_GRIPPER_JOINT_OPEN] * 2, move_time=0.5)  # open
             pass
@@ -343,9 +348,9 @@ def eval_bc(config, ckpt_name, save_episode=True):
         highest_rewards.append(episode_highest_reward)
         print(f'Rollout {rollout_id}\n{episode_return=}, {episode_highest_reward=}, {env_max_reward=}, Success: {episode_highest_reward==env_max_reward}')
 
-        if save_episode:
-            print("Saving videos.")
-            save_videos(image_list, DT, video_path=os.path.join(ckpt_dir, f'video{rollout_id}.mp4'))
+        # if save_episode:
+        #     print("Saving videos.")
+        #     save_videos(image_list, DT, video_path=os.path.join(ckpt_dir, f'video{rollout_id}.mp4'))
 
     success_rate = np.mean(np.array(highest_rewards) == env_max_reward)
     avg_return = np.mean(episode_returns)
@@ -375,7 +380,7 @@ def forward_pass(data, policy):
     return policy(qpos_data, image_data, action_data, is_pad) # TODO remove None
 
 
-def train_bc(train_dataloader, val_dataloader, config):
+def train_bc(train_dataloader, val_dataloader, config, resume_epoch=None):
     num_epochs = config['num_epochs']
     ckpt_dir = config['ckpt_dir']
     seed = config['seed']
@@ -388,11 +393,22 @@ def train_bc(train_dataloader, val_dataloader, config):
     policy.cuda()
     optimizer = make_optimizer(policy_class, policy)
 
+    # Load the checkpoint if resume_epoch is provided
+    if resume_epoch is not None:
+        ckpt_path = os.path.join(config['ckpt_dir'],f"policy_epoch_{resume_epoch}_seed_{seed}.ckpt")
+        checkpoint = torch.load(ckpt_path)
+        policy.load_state_dict(checkpoint)
+        optimizer = make_optimizer(policy_class, policy)
+        start_epoch = resume_epoch
+        print(f"Resuming training from epoch {start_epoch}")
+    else:
+        start_epoch = 0
+
     train_history = []
     validation_history = []
     min_val_loss = np.inf
     best_ckpt_info = None
-    for epoch in tqdm(range(num_epochs)):
+    for epoch in tqdm(range(start_epoch, num_epochs)):
         print(f'\nEpoch {epoch}')
         # validation
         with torch.inference_mode():
@@ -417,6 +433,7 @@ def train_bc(train_dataloader, val_dataloader, config):
         # training
         policy.train()
         optimizer.zero_grad()
+        epoch_train_history = []
         for batch_idx, data in enumerate(train_dataloader):
             forward_dict = forward_pass(data, policy)
             # backward
@@ -424,15 +441,19 @@ def train_bc(train_dataloader, val_dataloader, config):
             loss.backward()
             optimizer.step()
             optimizer.zero_grad()
-            train_history.append(detach_dict(forward_dict))
-        epoch_summary = compute_dict_mean(train_history[(batch_idx+1)*epoch:(batch_idx+1)*(epoch+1)])
-        epoch_train_loss = epoch_summary['loss']
-        print(f'Train loss: {epoch_train_loss:.5f}')
-        summary_string = ''
-        for k, v in epoch_summary.items():
-            summary_string += f'{k}: {v.item():.3f} '
-        print(summary_string)
-        
+            epoch_train_history.append(detach_dict(forward_dict))
+        train_history.extend(epoch_train_history)
+
+        if epoch_train_history:
+            epoch_summary = compute_dict_mean(epoch_train_history)
+            epoch_train_loss = epoch_summary['loss']
+            print(f'Train loss: {epoch_train_loss:.5f}')
+            summary_string = ''
+            for k, v in epoch_summary.items():
+                summary_string += f'{k}: {v.item():.3f} '
+            print(summary_string)
+        else:
+            print("No training data for this epoch.")
 
         if epoch % 100 == 0:
             ckpt_path = os.path.join(ckpt_dir, f'policy_epoch_{epoch}_seed_{seed}.ckpt')
@@ -474,7 +495,6 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--eval', action='store_true')
     parser.add_argument('--onscreen_render', action='store_true')
-    # parser.add_argument('--ckpt_dir', action='store', type=str, help='ckpt_dir', required=True)
     parser.add_argument('--policy_class', action='store', type=str, help='policy_class, capitalize', required=True)
     parser.add_argument('--task_name', action='store', type=str, help='task_name', required=True)
     parser.add_argument('--batch_size', action='store', type=int, help='batch_size', required=True)
@@ -488,5 +508,6 @@ if __name__ == '__main__':
     parser.add_argument('--hidden_dim', action='store', type=int, help='hidden_dim', required=False)
     parser.add_argument('--dim_feedforward', action='store', type=int, help='dim_feedforward', required=False)
     parser.add_argument('--temporal_agg', action='store_true')
-    
+    parser.add_argument('--resume_epoch', type=int, help='Epoch number to resume training from', required=False)
+
     main(vars(parser.parse_args()))

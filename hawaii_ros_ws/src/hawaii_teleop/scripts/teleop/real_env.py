@@ -12,7 +12,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__))))
 
 from teleop_utils import Recorder, ImageRecorder
 from threading import Thread
-from teleop_utils import move_arms, START_ARM_POSE
+from teleop_utils import move_arms, START_ARM_POSE_LEFT, START_ARM_POSE_RIGHT
 from interbotix_xs_modules.xs_robot.arm import InterbotixManipulatorXS
 from interbotix_xs_msgs.msg import JointSingleCommand
 
@@ -64,14 +64,20 @@ class RealEnv:
         self.ex.add_node(self.recorder_right)
         self.ex.add_node(self.image_recorder)
         self.ex.spin()
+        # while not self.shutdown_flag:
+        #     # spin_once() or similar method depending on your rclpy version
+        #     self.ex.spin_once(timeout_sec=0)
 
     def shutdown(self) -> None:
         """Destroy the node and shut down all threads and processes."""
+        # self.shutdown_flag = True
         self.recorder_left.destroy_node()
         self.recorder_right.destroy_node()
-        # self.image_recorder.destroy_node()
-        rclpy.shutdown()
+        self.image_recorder.destroy_node()
+        # rclpy.shutdown()
+        print("nodes shutdown")
         self._execution_thread.join()
+        print("thread done")
         time.sleep(0.5)
 
     def get_qpos(self):
@@ -108,8 +114,7 @@ class RealEnv:
         self.student_right.gripper.core.pub_single.publish(self.gripper_command)
 
     def _reset_joints(self):
-        reset_position = START_ARM_POSE[:6]
-        move_arms([self.student_left, self.student_right], [reset_position, reset_position], move_time=10)
+        move_arms([self.student_left, self.student_right], [START_ARM_POSE_LEFT[:6], START_ARM_POSE_RIGHT[:6]], move_time=10)
 
     def get_observation(self):
         obs = collections.OrderedDict()

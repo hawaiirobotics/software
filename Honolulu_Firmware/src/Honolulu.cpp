@@ -586,13 +586,14 @@ void loop()
 
           tft.setTextWrap(true);
           tft.setCursor(0, 0);
-          tft.setTextColor(ST77XX_WHITE);
+          tft.setTextColor(ST77XX_WHITE, ST77XX_BLACK);
           tft.setTextSize(2);
 
           memset(buffer, 0, 200);
           sprintf(buffer, "arm1 enc %d", i);
 
           tft.print(buffer);
+          iic_error[i] = 0;
         }
       } else {
         iic_error[i] = 0;
@@ -615,13 +616,14 @@ void loop()
 
           tft.setTextWrap(true);
           tft.setCursor(0, 0);
-          tft.setTextColor(ST77XX_WHITE);
+          tft.setTextColor(ST77XX_WHITE, ST77XX_BLACK);
           tft.setTextSize(2);
 
           memset(buffer, 0, 200);
           sprintf(buffer, "arm2 enc %d", i);
 
           tft.print(buffer);
+          iic_error[i] = 0;
         }
       } else {
         iic_error[i] = 0;

@@ -8,7 +8,8 @@ from interbotix_xs_msgs.msg import JointSingleCommand
 DT = 0.02
 STUDENT_GRIPPER_JOINT_OPEN = 2.74
 # STUDENT_GRIPPER_JOINT_CLOSE = -2.4
-START_ARM_POSE = [0.0, -0.24, 0.56, 0.0, 0.44, 0.0, 2.74]
+START_ARM_POSE_LEFT = [0.0, -0.22, 0.5, 0.0, 0.3, 0.0, 2.72]
+START_ARM_POSE_RIGHT = [0.0, -0.22, 0.50, -0.1, 0.3, 0.0, 2.74]
 
 class ImageRecorder(Node):
     def __init__(self, init_node=True, is_debug=False):
@@ -38,7 +39,7 @@ class ImageRecorder(Node):
                 callback_func = self.image_cb_cam_right
             else:
                 raise NotImplementedError
-            self.create_subscription(Image, f"/usb_{cam_name}/image_raw", callback_func, 10)
+            self.create_subscription(Image, f"/usb_{cam_name}/image_raw", callback_func, 5)
             if self.is_debug:
                 setattr(self, f'{cam_name}_timestamps', deque(maxlen=50))
         while any(getattr(self, f'{cam_name}_image') is None for cam_name in self.camera_names) and rclpy.ok(): # check that all cameras are ready and publishing to their appropriate topics
@@ -128,7 +129,7 @@ class Recorder(Node):
         if init_node:
             rclpy.init(args=None)
         super().__init__(node_name=f'recorder{side}')
-        self.create_subscription(JointState, f'/student_{side}/joint_states', self.student_state_cb, 10)
+        self.create_subscription(JointState, f'/student_{side}/joint_states', self.student_state_cb, 5)
         self.create_subscription(JointGroupCommand, f'/student_{side}/commands/joint_group', self.student_arm_commands_cb, 10)
         self.create_subscription(JointSingleCommand, f'/student_{side}/commands/joint_single', self.student_gripper_commands_cb, 10)
         if self.is_debug:

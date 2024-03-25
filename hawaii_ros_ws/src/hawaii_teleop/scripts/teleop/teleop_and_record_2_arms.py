@@ -108,10 +108,11 @@ def capture_one_episode(env, max_timesteps, camera_names, dataset_dir, dataset_n
     if os.path.isfile(dataset_path) and not overwrite:
         print(f'Dataset already exist at \n{dataset_path}\nHint: set overwrite to True.')
         exit()
+    
 
     # Clear the queue before setting up the student arms
-    while not data_queue.empty():
-        data_queue.get()
+    # while not data_queue.empty():
+    #     data_queue.get()
 
     # setup student arms and move them to where teacher arms are
     setup_student_arms(env.student_left, env.student_right)
@@ -159,6 +160,7 @@ def capture_one_episode(env, max_timesteps, camera_names, dataset_dir, dataset_n
         actual_dt_history.append([t0, t1, t2])
     
     print("DONE")
+    setup_done= False
 
     freq_mean = print_dt_diagnosis(actual_dt_history)
     if freq_mean < 42 and not using_sim:
@@ -246,7 +248,7 @@ if __name__=='__main__':
     using_sim = False
     stop_threads = False
 
-    task_config = TASK_CONFIGS["stack_chips"]
+    task_config = TASK_CONFIGS["pcb_assembly"]
     dataset_dir = task_config['dataset_dir']
     max_timesteps = task_config['episode_len']
     camera_names = task_config['camera_names']

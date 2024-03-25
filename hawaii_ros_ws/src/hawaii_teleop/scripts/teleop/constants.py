@@ -18,4 +18,10 @@ TASK_CONFIGS = {
         'episode_len': 1000,
         'camera_names': ['cam_high', 'cam_front', 'cam_left', 'cam_right']
     },
+    'pcb_assembly':{
+        'dataset_dir': DATA_DIR + '/pcb_assembly',
+        'num_episodes': 50,
+        'episode_len': 1250,
+        'camera_names': ['cam_high', 'cam_front', 'cam_left', 'cam_right']
+    },
 }
