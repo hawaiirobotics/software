@@ -43,9 +43,11 @@ def main(args):
     batch_size_val = args['batch_size']
     num_epochs = args['num_epochs']
     resume_epoch = args.get('resume_epoch', None)
+    external_ckpt_dir = args.get('model_dir', None)
+    eval_epoch = args.get('eval_epoch', None)
+
 
     ckpt_dir = os.path.join("saved_models",task_name)
-    print(ckpt_dir)
     # get task parameters
     is_sim = task_name[:4] == 'sim_'
     if is_sim:
@@ -102,7 +104,11 @@ def main(args):
     }
 
     if is_eval:
-        ckpt_names = [f'policy_epoch_1900_seed_0.ckpt']
+        if eval_epoch is not None:
+            ckpt_names = [f'policy_epoch_{eval_epoch}_seed_{args["seed"]}.ckpt']
+            print(f'Using epoch {eval_epoch}')
+        else:
+            ckpt_names = [f'policy_best.ckpt']
         results = []
         for ckpt_name in ckpt_names:
             success_rate, avg_return = eval_bc(config, ckpt_name, save_episode=True)
@@ -125,9 +131,10 @@ def main(args):
 
     if resume_epoch is not None:
         print(f"Resuming training from {resume_epoch} epochs")
-        best_ckpt_info = train_bc(train_dataloader, val_dataloader, config, resume_epoch)
+        best_ckpt_info = train_bc(train_dataloader, val_dataloader, config, resume_epoch, external_ckpt_dir)
     else:
         best_ckpt_info = train_bc(train_dataloader, val_dataloader, config)
+
     best_epoch, min_val_loss, best_state_dict = best_ckpt_info
 
     # save best checkpoint
@@ -202,7 +209,7 @@ def eval_bc(config, ckpt_name, save_episode=True):
         teleop_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '../teleop'))
         print(teleop_dir)
         sys.path.insert(0, teleop_dir)
-        from teleop.teleop_utils import move_grippers, get_arm_joint_positions, get_arm_gripper_positions
+        from teleop.teleop_utils import move_grippers, move_arms, get_arm_joint_positions, get_arm_gripper_positions
         from teleop.real_env import make_real_env
         env = make_real_env()
         env_max_reward = 0
@@ -308,19 +315,26 @@ def eval_bc(config, ckpt_name, save_episode=True):
                 target_qpos = action
 
                 # Validate action
-                for index, (new_pos, prev_pos) in enumerate(zip(action, prev_command)):
-                    arm = "left"
-                    if abs(prev_pos - new_pos) > threshold and index != 6 and index != 13: # ignore grippers
-                        if index > 6:
-                            arm = "right"
-                            index = index % 7  # Adjusted for right arm indexing
-                        print(f"Cancelling Teleop: command {new_pos} to joint {index + 1} on {arm} arm is too far from the current pos {prev_pos}.")
-                        return False
+                # for index, (new_pos, prev_pos) in enumerate(zip(action, prev_command)):
+                #     arm = "left"
+                #     if abs(prev_pos - new_pos) > threshold and index != 6 and index != 13: # ignore grippers
+                #         if index > 6:
+                #             arm = "right"
+                #             index = index % 7  # Adjusted for right arm indexing
+                #         print(f"Cancelling Teleop: command {new_pos} to joint {index + 1} on {arm} arm is too far from the current pos {prev_pos}.")
+                #         return False
                 prev_command = action
 
                 ## step the environment
                 
                 target_qpos = [float(item) for item in target_qpos]
+                if t == 0:
+                    print("Moving arms to: ", target_qpos[:7], "/n", target_qpos[7:])
+                    left_pos = target_qpos[:6]
+                    right_pos = target_qpos[7:13]
+                    print("Left pos: ", left_pos)
+                    print("Right pos: ", right_pos)
+                    move_arms([env.student_left, env.student_right], [left_pos, right_pos], move_time=3)
                 print(target_qpos)
                 ts = env.step(target_qpos)
 
@@ -380,7 +394,7 @@ def forward_pass(data, policy):
     return policy(qpos_data, image_data, action_data, is_pad) # TODO remove None
 
 
-def train_bc(train_dataloader, val_dataloader, config, resume_epoch=None):
+def train_bc(train_dataloader, val_dataloader, config, resume_epoch=None, external_ckpt_dir=None):
     num_epochs = config['num_epochs']
     ckpt_dir = config['ckpt_dir']
     seed = config['seed']
@@ -395,12 +409,16 @@ def train_bc(train_dataloader, val_dataloader, config, resume_epoch=None):
 
     # Load the checkpoint if resume_epoch is provided
     if resume_epoch is not None:
-        ckpt_path = os.path.join(config['ckpt_dir'],f"policy_epoch_{resume_epoch}_seed_{seed}.ckpt")
+        if external_ckpt_dir:
+            ckpt_path = os.path.join(external_ckpt_dir, f"policy_best.ckpt")
+        else:
+            ckpt_path = os.path.join(config['ckpt_dir'], f"policy_epoch_{resume_epoch}_seed_{config['seed']}.ckpt")
         checkpoint = torch.load(ckpt_path)
-        policy.load_state_dict(checkpoint)
-        optimizer = make_optimizer(policy_class, policy)
+        policy.load_state_dict(checkpoint['model_state_dict'])
+        if 'optimizer_state_dict' in checkpoint:
+            optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
         start_epoch = resume_epoch
-        print(f"Resuming training from epoch {start_epoch}")
+        print(f"Resuming training from epoch {start_epoch} using checkpoint {ckpt_path}")
     else:
         start_epoch = 0
 
@@ -509,5 +527,8 @@ if __name__ == '__main__':
     parser.add_argument('--dim_feedforward', action='store', type=int, help='dim_feedforward', required=False)
     parser.add_argument('--temporal_agg', action='store_true')
     parser.add_argument('--resume_epoch', type=int, help='Epoch number to resume training from', required=False)
+    parser.add_argument('--eval_epoch', type=int, help='Epoch number to evaluate', required=False)
+    parser.add_argument('--model_dir', type=str, help='Directory where the checkpoint is stored to continue training', required=False)
+
 
     main(vars(parser.parse_args()))
